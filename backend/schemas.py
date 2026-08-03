@@ -1,0 +1,173 @@
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional
+
+class BusinessUnitOut(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
+class GoodsCreate(BaseModel):
+    factory_name: str # Jeans, Shirts, Formals
+    type: str
+    brand_name: str
+    manufacture_date: str # YYYY-MM-DD
+    total_pcs: int = Field(..., ge=1)
+    rejected_pcs: int = Field(0, ge=0)
+
+    @field_validator('factory_name')
+    def validate_factory(cls, v):
+        if v not in ['Jeans', 'Shirts', 'Formals']:
+            raise ValueError('Factory name must be Jeans, Shirts, or Formals')
+        return v
+
+    @field_validator('rejected_pcs')
+    def validate_rejected(cls, v, info):
+        if 'total_pcs' in info.data and v > info.data['total_pcs']:
+            raise ValueError('Rejected PCS cannot exceed Total PCS')
+        return v
+
+class GoodsOut(BaseModel):
+    id: int
+    factory_name: str
+    type: str
+    brand_name: str
+    manufacture_date: str
+    total_pcs: int
+    rejected_pcs: int
+    passed_pcs: int
+    available_pcs: int
+    sold_pcs: int
+    total_earnings: float
+
+    class Config:
+        from_attributes = True
+
+class SaleCreate(BaseModel):
+    date: str # YYYY-MM-DD
+    sold_to: str
+    quantity: int = Field(..., ge=1)
+    price: float = Field(..., gt=0) # Unit price
+    receipt: str
+    receiver: str # "Expense" or "Saving"
+    account_holder_id: Optional[int] = None
+    expense_description: Optional[str] = None
+
+    @field_validator('receiver')
+    def validate_receiver(cls, v):
+        if v not in ['Expense', 'Saving']:
+            raise ValueError('Receiver must be Expense or Saving')
+        return v
+
+class SaleOut(BaseModel):
+    id: int
+    goods_id: int
+    date: str
+    sold_to: str
+    quantity: int
+    price: float
+    total_amount: float
+    receipt: str
+    receiver: str
+    account_holder_id: Optional[int] = None
+    expense_description: Optional[str] = None
+    account_holder_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class AccountHolderCreate(BaseModel):
+    name: str
+    current_balance: float = 0.0
+
+class AccountHolderOut(BaseModel):
+    id: int
+    name: str
+    current_balance: float
+
+    class Config:
+        from_attributes = True
+
+class ExpenseCreate(BaseModel):
+    factory_name: str # Jeans, Shirts, Formals
+    date: str # YYYY-MM-DD
+    expense_description: str
+    amount: float = Field(..., gt=0)
+    account_holder_id: int # Manual expense reduces selected Account Holder balance
+
+    @field_validator('factory_name')
+    def validate_factory(cls, v):
+        if v not in ['Jeans', 'Shirts', 'Formals']:
+            raise ValueError('Factory name must be Jeans, Shirts, or Formals')
+        return v
+
+class ExpenseOut(BaseModel):
+    id: int
+    factory_name: str
+    date: str
+    expense_description: str
+    amount: float
+    account_holder_id: Optional[int] = None
+    is_from_sale: bool
+    account_holder_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class TransactionOut(BaseModel):
+    id: int
+    date: str
+    type: str # "Sale" or "Expense"
+    description: str
+    amount: float
+    factory_name: str
+    goods_id: Optional[int] = None
+    sales_id: Optional[int] = None
+    expense_id: Optional[int] = None
+    account_holder_id: Optional[int] = None
+    account_holder_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class FactorySummary(BaseModel):
+    factory: str
+    available_stock: int
+    sales: float
+    expenses: float
+    profit: float
+
+class Notification(BaseModel):
+    id: str
+    type: str # "warning", "info", "success"
+    title: str
+    message: str
+    date: str
+
+class DashboardStats(BaseModel):
+    overall_available_stock: int
+    total_sales: float
+    total_expenses: float
+    net_profit: float
+    factory_summaries: List[FactorySummary]
+    recent_goods: List[GoodsOut]
+    notifications: List[Notification]
+
+class GoodsDetailOut(BaseModel):
+    goods: GoodsOut
+    sales: List[SaleOut]
+
+class AccountHistoryOut(BaseModel):
+    account_holder: AccountHolderOut
+    transactions: List[TransactionOut]
+
+class ReportOut(BaseModel):
+    month: str
+    factory: str
+    available_stock: int
+    total_sales: float
+    total_expenses: float
+    net_profit: float
+    factory_breakdown: List[FactorySummary]
+    top_goods: List[GoodsOut]

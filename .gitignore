@@ -1,0 +1,20 @@
+# Python / Virtualenv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+backend/bluesun.db
+
+# Node / React
+node_modules/
+dist/
+.env
+.env.local
+.DS_Store
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
