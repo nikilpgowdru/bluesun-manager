@@ -100,7 +100,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
 
         <div className="bg-brand-50 p-3 rounded-xl border border-brand-100 flex justify-between items-center text-xs text-brand-900 font-semibold">
           <span>Available Stock: <strong>{availablePcs} PCS</strong></span>
-          <span>Sale Total: <strong className="text-sm font-extrabold text-brand-700">${calculatedTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong></span>
+          <span>Sale Total: <strong className="text-sm font-extrabold text-brand-700">₹{calculatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -161,13 +161,13 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
 
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Unit Price ($) *
+              Unit Price (₹) *
             </label>
             <input
               type="number"
               step="0.01"
               min="0.01"
-              placeholder="e.g. 45.00"
+              placeholder="e.g. 450.00"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -217,7 +217,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
             >
               {accountHolders.map(ah => (
                 <option key={ah.id} value={ah.id}>
-                  {ah.name} (Current: ${ah.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2 })})
+                  {ah.name} (Current: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
                 </option>
               ))}
             </select>

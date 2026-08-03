@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { createGoods } from '../api';
+import { createGoods, updateGoods } from '../api';
 
-export default function GoodsModal({ isOpen, onClose, onSuccess }) {
+export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = null }) {
   const [formData, setFormData] = useState({
     factory_name: 'Jeans',
     type: '',
@@ -13,6 +13,28 @@ export default function GoodsModal({ isOpen, onClose, onSuccess }) {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        factory_name: initialData.factory_name || 'Jeans',
+        type: initialData.type || '',
+        brand_name: initialData.brand_name || '',
+        manufacture_date: initialData.manufacture_date || new Date().toISOString().split('T')[0],
+        total_pcs: initialData.total_pcs || '',
+        rejected_pcs: initialData.rejected_pcs || 0,
+      });
+    } else {
+      setFormData({
+        factory_name: 'Jeans',
+        type: '',
+        brand_name: '',
+        manufacture_date: new Date().toISOString().split('T')[0],
+        total_pcs: '',
+        rejected_pcs: 0,
+      });
+    }
+  }, [initialData, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,31 +62,30 @@ export default function GoodsModal({ isOpen, onClose, onSuccess }) {
 
     try {
       setLoading(true);
-      await createGoods({
-        ...formData,
-        total_pcs: total,
-        rejected_pcs: rejected,
-      });
+      if (initialData) {
+        await updateGoods(initialData.id, {
+          ...formData,
+          total_pcs: total,
+          rejected_pcs: rejected,
+        });
+      } else {
+        await createGoods({
+          ...formData,
+          total_pcs: total,
+          rejected_pcs: rejected,
+        });
+      }
       onSuccess();
       onClose();
-      // Reset form
-      setFormData({
-        factory_name: 'Jeans',
-        type: '',
-        brand_name: '',
-        manufacture_date: new Date().toISOString().split('T')[0],
-        total_pcs: '',
-        rejected_pcs: 0,
-      });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create Goods record.');
+      setError(err.response?.data?.detail || `Failed to ${initialData ? 'update' : 'create'} Goods record.`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Production Goods">
+    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Production Goods" : "Add Production Goods"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-200">
@@ -168,7 +189,7 @@ export default function GoodsModal({ isOpen, onClose, onSuccess }) {
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Saving...' : 'Save Production Goods'}
+            {loading ? 'Saving...' : (initialData ? 'Update Goods' : 'Save Production Goods')}
           </button>
         </div>
       </form>

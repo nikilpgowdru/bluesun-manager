@@ -24,4 +24,16 @@ export const getExpenses = (factory, month) => api.get('/expenses', { params: { 
 export const createExpense = (data) => api.post('/expenses', data);
 export const getReports = (month, factory) => api.get('/reports', { params: { month, factory } });
 
+export const deleteGoods = (id) => api.delete(`/goods/${id}`);
+export const deleteSale = (id) => api.delete(`/sales/${id}`);
+export const deleteAccountHolder = (id) => api.delete(`/account-holders/${id}`);
+export const deleteExpense = (id) => api.delete(`/expenses/${id}`);
+export const resetDatabase = () => api.post('/reset-database');
+
+export const updateGoods = (id, data) => api.put(`/goods/${id}`, data);
+export const updateSale = (id, data) => api.put(`/sales/${id}`, data);
+export const updateAccountHolder = (id, data) => api.put(`/account-holders/${id}`, data);
+export const updateExpense = (id, data) => api.put(`/expenses/${id}`, data);
+export const exportCloudBackup = () => api.get('/cloud/export-backup');
+
 export default api;

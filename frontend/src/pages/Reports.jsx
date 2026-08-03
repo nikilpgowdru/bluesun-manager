@@ -43,21 +43,21 @@ export default function Reports() {
       render: (row) => <span>{row.available_stock.toLocaleString()} PCS</span>,
     },
     {
-      header: 'Sales ($)',
+      header: 'Sales (₹)',
       accessor: 'sales',
-      render: (row) => <span className="font-bold text-emerald-600">${row.sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>,
+      render: (row) => <span className="font-bold text-emerald-600">₹{row.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>,
     },
     {
-      header: 'Expenses ($)',
+      header: 'Expenses (₹)',
       accessor: 'expenses',
-      render: (row) => <span className="font-bold text-amber-600">${row.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>,
+      render: (row) => <span className="font-bold text-amber-600">₹{row.expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>,
     },
     {
-      header: 'Net Profit ($)',
+      header: 'Net Profit (₹)',
       accessor: 'profit',
       render: (row) => (
         <span className={`font-extrabold ${row.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-          ${row.profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -71,7 +71,7 @@ export default function Reports() {
     {
       header: 'Total Revenue',
       accessor: 'total_earnings',
-      render: (row) => <span className="font-extrabold text-emerald-600">${row.total_earnings.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+      render: (row) => <span className="font-extrabold text-emerald-600">₹{row.total_earnings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
     },
   ];
 
@@ -166,19 +166,19 @@ export default function Reports() {
               <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
                 <span className="text-xs font-bold text-emerald-700 uppercase">Total Sales</span>
                 <p className="text-2xl font-extrabold text-emerald-700 mt-1">
-                  ${report.total_sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ₹{report.total_sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
                 <span className="text-xs font-bold text-amber-700 uppercase">Total Expenses</span>
                 <p className="text-2xl font-extrabold text-amber-700 mt-1">
-                  ${report.total_expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ₹{report.total_expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="p-4 bg-brand-50/50 rounded-xl border border-brand-100">
                 <span className="text-xs font-bold text-brand-700 uppercase">Net Profit</span>
                 <p className={`text-2xl font-extrabold mt-1 ${report.net_profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-                  ${report.net_profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ₹{report.net_profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>

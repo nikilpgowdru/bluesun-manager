@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { createExpense, getAccountHolders } from '../api';
+import { createExpense, updateExpense, getAccountHolders } from '../api';
 
-export default function ExpenseModal({ isOpen, onClose, onSuccess }) {
+export default function ExpenseModal({ isOpen, onClose, onSuccess, initialData = null }) {
   const [accountHolders, setAccountHolders] = useState([]);
   const [formData, setFormData] = useState({
     factory_name: 'Jeans',
@@ -20,11 +20,31 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }) {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        factory_name: initialData.factory_name || 'Jeans',
+        date: initialData.date || new Date().toISOString().split('T')[0],
+        expense_description: initialData.expense_description || '',
+        amount: initialData.amount !== undefined ? String(initialData.amount) : '',
+        account_holder_id: initialData.account_holder_id || '',
+      });
+    } else {
+      setFormData({
+        factory_name: 'Jeans',
+        date: new Date().toISOString().split('T')[0],
+        expense_description: '',
+        amount: '',
+        account_holder_id: accountHolders[0]?.id || '',
+      });
+    }
+  }, [initialData, isOpen, accountHolders]);
+
   const fetchAccountHolders = async () => {
     try {
       const res = await getAccountHolders();
       setAccountHolders(res.data);
-      if (res.data.length > 0) {
+      if (res.data.length > 0 && !formData.account_holder_id) {
         setFormData(prev => ({ ...prev, account_holder_id: res.data[0].id }));
       }
     } catch (err) {
@@ -46,37 +66,33 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }) {
       setError('Amount must be greater than 0.');
       return;
     }
-    if (!formData.account_holder_id) {
-      setError('Please select an Account Holder to deduct funds from.');
-      return;
-    }
 
     try {
       setLoading(true);
-      await createExpense({
-        ...formData,
-        amount: amt,
-        account_holder_id: parseInt(formData.account_holder_id),
-      });
+      if (initialData) {
+        await updateExpense(initialData.id, {
+          ...formData,
+          amount: amt,
+          account_holder_id: formData.account_holder_id ? parseInt(formData.account_holder_id) : None,
+        });
+      } else {
+        await createExpense({
+          ...formData,
+          amount: amt,
+          account_holder_id: parseInt(formData.account_holder_id),
+        });
+      }
       onSuccess();
       onClose();
-      // Reset
-      setFormData({
-        factory_name: 'Jeans',
-        date: new Date().toISOString().split('T')[0],
-        expense_description: '',
-        amount: '',
-        account_holder_id: accountHolders[0]?.id || '',
-      });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to record expense.');
+      setError(err.response?.data?.detail || `Failed to ${initialData ? 'update' : 'record'} expense.`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Record Manual Expense">
+    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Manual Expense" : "Record Manual Expense"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-200">
@@ -124,7 +140,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }) {
           >
             {accountHolders.map(ah => (
               <option key={ah.id} value={ah.id}>
-                {ah.name} (Current Balance: ${ah.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2 })})
+                {ah.name} (Current Balance: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
               </option>
             ))}
           </select>
@@ -145,13 +161,13 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }) {
 
         <div>
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-            Amount ($) *
+            Amount (₹) *
           </label>
           <input
             type="number"
             step="0.01"
             min="0.01"
-            placeholder="e.g. 1500.00"
+            placeholder="e.g. 15000.00"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -171,7 +187,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess }) {
             disabled={loading}
             className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Deducting & Saving...' : 'Record Expense'}
+            {loading ? 'Saving...' : (initialData ? 'Update Expense' : 'Record Expense')}
           </button>
         </div>
       </form>

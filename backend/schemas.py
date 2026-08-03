@@ -171,3 +171,34 @@ class ReportOut(BaseModel):
     net_profit: float
     factory_breakdown: List[FactorySummary]
     top_goods: List[GoodsOut]
+
+# Update Models
+class GoodsUpdate(BaseModel):
+    factory_name: Optional[str] = None
+    type: Optional[str] = None
+    brand_name: Optional[str] = None
+    manufacture_date: Optional[str] = None
+    total_pcs: Optional[int] = Field(None, ge=1)
+    rejected_pcs: Optional[int] = Field(None, ge=0)
+
+class SaleUpdate(BaseModel):
+    date: Optional[str] = None
+    sold_to: Optional[str] = None
+    quantity: Optional[int] = Field(None, ge=1)
+    price: Optional[float] = Field(None, gt=0)
+    receipt: Optional[str] = None
+    receiver: Optional[str] = None
+    account_holder_id: Optional[int] = None
+    expense_description: Optional[str] = None
+
+class AccountHolderUpdate(BaseModel):
+    name: Optional[str] = None
+    current_balance: Optional[float] = None
+
+class ExpenseUpdate(BaseModel):
+    factory_name: Optional[str] = None
+    date: Optional[str] = None
+    expense_description: Optional[str] = None
+    amount: Optional[float] = Field(None, gt=0)
+    account_holder_id: Optional[int] = None
+

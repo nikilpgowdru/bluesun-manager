@@ -4,6 +4,21 @@ import models
 import schemas
 from fastapi import HTTPException
 
+def goods_to_out(g: models.Goods) -> schemas.GoodsOut:
+    return schemas.GoodsOut(
+        id=g.id,
+        factory_name=g.factory_name,
+        type=g.type,
+        brand_name=g.brand_name,
+        manufacture_date=g.manufacture_date,
+        total_pcs=g.total_pcs,
+        rejected_pcs=g.rejected_pcs,
+        passed_pcs=g.passed_pcs,
+        available_pcs=g.available_pcs,
+        sold_pcs=g.sold_pcs,
+        total_earnings=g.total_earnings
+    )
+
 # Business Units
 def get_business_units(db: Session):
     return db.query(models.BusinessUnit).all()
@@ -15,7 +30,8 @@ def get_goods(db: Session, factory: str = None, month: str = None):
         query = query.filter(models.Goods.factory_name == factory)
     if month and month != "All":
         query = query.filter(models.Goods.manufacture_date.startswith(month))
-    return query.order_by(models.Goods.manufacture_date.desc()).all()
+    goods_list = query.order_by(models.Goods.manufacture_date.desc()).all()
+    return [goods_to_out(g) for g in goods_list]
 
 def create_goods(db: Session, goods_in: schemas.GoodsCreate):
     goods = models.Goods(
@@ -31,7 +47,7 @@ def create_goods(db: Session, goods_in: schemas.GoodsCreate):
     db.add(goods)
     db.commit()
     db.refresh(goods)
-    return goods
+    return goods_to_out(goods)
 
 def get_goods_detail(db: Session, goods_id: int):
     goods = db.query(models.Goods).filter(models.Goods.id == goods_id).first()
@@ -40,7 +56,6 @@ def get_goods_detail(db: Session, goods_id: int):
     
     sales = db.query(models.Sale).filter(models.Sale.goods_id == goods_id).order_by(models.Sale.date.desc()).all()
     
-    # Enrich sales with account holder name if any
     sales_out = []
     for s in sales:
         ah_name = None
@@ -63,8 +78,7 @@ def get_goods_detail(db: Session, goods_id: int):
             account_holder_name=ah_name
         ))
 
-    goods_out = schemas.GoodsOut.model_validate(goods)
-    return schemas.GoodsDetailOut(goods=goods_out, sales=sales_out)
+    return schemas.GoodsDetailOut(goods=goods_to_out(goods), sales=sales_out)
 
 # Sales
 def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
@@ -329,7 +343,7 @@ def get_dashboard_stats(db: Session, month: str = None):
 
     # Recent Goods (last 5 created or manufactured)
     recent_goods = db.query(models.Goods).order_by(models.Goods.manufacture_date.desc(), models.Goods.id.desc()).limit(5).all()
-    recent_goods_out = [schemas.GoodsOut.model_validate(g) for g in recent_goods]
+    recent_goods_out = [goods_to_out(g) for g in recent_goods]
 
     # Automated Notifications
     notifications = []
@@ -347,7 +361,7 @@ def get_dashboard_stats(db: Session, month: str = None):
             id="profit_1",
             type="success",
             title="Positive Cashflow",
-            message=f"Net profit for the selected period stands at ${net_profit:,.2f}.",
+            message=f"Net profit for the selected period stands at ₹{net_profit:,.2f}.",
             date="Today"
         ))
     else:
@@ -355,7 +369,7 @@ def get_dashboard_stats(db: Session, month: str = None):
             id="profit_loss",
             type="warning",
             title="Deficit Alert",
-            message=f"Expenses exceed sales by ${abs(net_profit):,.2f} for the selected period.",
+            message=f"Expenses exceed sales by ₹{abs(net_profit):,.2f} for the selected period.",
             date="Today"
         ))
 
@@ -419,7 +433,7 @@ def get_report_data(db: Session, month: str = None, factory: str = None):
         ))
 
     top_goods = sorted(goods_list, key=lambda x: x.total_earnings, reverse=True)[:5]
-    top_goods_out = [schemas.GoodsOut.model_validate(g) for g in top_goods]
+    top_goods_out = [goods_to_out(g) for g in top_goods]
 
     return schemas.ReportOut(
         month=month or "All Time",
@@ -431,3 +445,336 @@ def get_report_data(db: Session, month: str = None, factory: str = None):
         factory_breakdown=breakdown,
         top_goods=top_goods_out
     )
+
+# Update Goods
+def update_goods(db: Session, goods_id: int, goods_in: schemas.GoodsUpdate):
+    goods = db.query(models.Goods).filter(models.Goods.id == goods_id).first()
+    if not goods:
+        raise HTTPException(status_code=404, detail="Goods record not found")
+    
+    if goods_in.factory_name is not None:
+        goods.factory_name = goods_in.factory_name
+    if goods_in.type is not None:
+        goods.type = goods_in.type
+    if goods_in.brand_name is not None:
+        goods.brand_name = goods_in.brand_name
+    if goods_in.manufacture_date is not None:
+        goods.manufacture_date = goods_in.manufacture_date
+    if goods_in.total_pcs is not None:
+        if goods_in.total_pcs < goods.rejected_pcs + goods.sold_pcs:
+            raise HTTPException(status_code=400, detail="Total PCS cannot be less than Rejected + Sold PCS")
+        goods.total_pcs = goods_in.total_pcs
+    if goods_in.rejected_pcs is not None:
+        if goods_in.rejected_pcs > goods.total_pcs:
+            raise HTTPException(status_code=400, detail="Rejected PCS cannot exceed Total PCS")
+        goods.rejected_pcs = goods_in.rejected_pcs
+
+    db.commit()
+    db.refresh(goods)
+    return goods_to_out(goods)
+
+# Update Sale
+def update_sale(db: Session, sale_id: int, sale_in: schemas.SaleUpdate):
+    sale = db.query(models.Sale).filter(models.Sale.id == sale_id).first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale record not found")
+    
+    goods = db.query(models.Goods).filter(models.Goods.id == sale.goods_id).first()
+    if not goods:
+        raise HTTPException(status_code=404, detail="Associated Goods record not found")
+
+    # Revert old sale impacts
+    goods.sold_pcs = max(0, goods.sold_pcs - sale.quantity)
+    goods.total_earnings = max(0.0, goods.total_earnings - sale.total_amount)
+    
+    if sale.receiver == "Saving" and sale.account_holder_id:
+        ah_old = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
+        if ah_old:
+            ah_old.current_balance = max(0.0, ah_old.current_balance - sale.total_amount)
+    elif sale.receiver == "Expense":
+        db.query(models.Expense).filter(
+            models.Expense.factory_name == goods.factory_name,
+            models.Expense.date == sale.date,
+            models.Expense.amount == sale.total_amount,
+            models.Expense.is_from_sale == True
+        ).delete()
+
+    # Update attributes
+    new_qty = sale_in.quantity if sale_in.quantity is not None else sale.quantity
+    new_price = sale_in.price if sale_in.price is not None else sale.price
+    
+    if new_qty > goods.available_pcs:
+        raise HTTPException(status_code=400, detail=f"Requested quantity ({new_qty}) exceeds available stock ({goods.available_pcs})")
+
+    new_total = round(new_qty * new_price, 2)
+    sale.date = sale_in.date or sale.date
+    sale.sold_to = sale_in.sold_to or sale.sold_to
+    sale.quantity = new_qty
+    sale.price = new_price
+    sale.total_amount = new_total
+    sale.receipt = sale_in.receipt or sale.receipt
+    sale.receiver = sale_in.receiver or sale.receiver
+    sale.account_holder_id = sale_in.account_holder_id if sale.receiver == "Saving" else None
+    sale.expense_description = sale_in.expense_description if sale.receiver == "Expense" else None
+
+    # Apply new sale impacts
+    goods.sold_pcs += new_qty
+    goods.total_earnings += new_total
+
+    # Re-create transaction
+    db.query(models.Transaction).filter(models.Transaction.sales_id == sale.id).delete()
+    tx_desc = f"Sale: {goods.brand_name} ({goods.type}) x {new_qty} pcs to {sale.sold_to}"
+    tx = models.Transaction(
+        date=sale.date,
+        type="Sale",
+        description=tx_desc,
+        amount=new_total,
+        factory_name=goods.factory_name,
+        goods_id=goods.id,
+        sales_id=sale.id,
+        account_holder_id=sale.account_holder_id
+    )
+    db.add(tx)
+
+    if sale.receiver == "Expense":
+        exp_desc = sale.expense_description or f"Expense from Sale of {goods.brand_name}"
+        db.add(models.Expense(
+            factory_name=goods.factory_name,
+            date=sale.date,
+            expense_description=exp_desc,
+            amount=new_total,
+            account_holder_id=None,
+            is_from_sale=True
+        ))
+    elif sale.receiver == "Saving" and sale.account_holder_id:
+        ah_new = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
+        if ah_new:
+            ah_new.current_balance += new_total
+
+    db.commit()
+    db.refresh(sale)
+    
+    ah_name = None
+    if sale.account_holder_id:
+        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
+        if ah:
+            ah_name = ah.name
+
+    return schemas.SaleOut(
+        id=sale.id,
+        goods_id=sale.goods_id,
+        date=sale.date,
+        sold_to=sale.sold_to,
+        quantity=sale.quantity,
+        price=sale.price,
+        total_amount=sale.total_amount,
+        receipt=sale.receipt,
+        receiver=sale.receiver,
+        account_holder_id=sale.account_holder_id,
+        expense_description=sale.expense_description,
+        account_holder_name=ah_name
+    )
+
+# Update Account Holder
+def update_account_holder(db: Session, account_holder_id: int, ah_in: schemas.AccountHolderUpdate):
+    ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == account_holder_id).first()
+    if not ah:
+        raise HTTPException(status_code=404, detail="Account Holder not found")
+    
+    if ah_in.name is not None:
+        ah.name = ah_in.name
+    if ah_in.current_balance is not None:
+        ah.current_balance = ah_in.current_balance
+
+    db.commit()
+    db.refresh(ah)
+    return ah
+
+# Update Expense
+def update_expense(db: Session, expense_id: int, exp_in: schemas.ExpenseUpdate):
+    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense record not found")
+    
+    # Revert old balance deduction if manual
+    if expense.account_holder_id:
+        old_ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == expense.account_holder_id).first()
+        if old_ah:
+            old_ah.current_balance += expense.amount
+
+    if exp_in.factory_name is not None:
+        expense.factory_name = exp_in.factory_name
+    if exp_in.date is not None:
+        expense.date = exp_in.date
+    if exp_in.expense_description is not None:
+        expense.expense_description = exp_in.expense_description
+    if exp_in.amount is not None:
+        expense.amount = exp_in.amount
+    if exp_in.account_holder_id is not None:
+        expense.account_holder_id = exp_in.account_holder_id
+
+    # Apply new balance deduction if manual
+    if expense.account_holder_id:
+        new_ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == expense.account_holder_id).first()
+        if new_ah:
+            new_ah.current_balance -= expense.amount
+
+    # Update associated transaction
+    tx = db.query(models.Transaction).filter(models.Transaction.expense_id == expense.id).first()
+    if tx:
+        tx.date = expense.date
+        tx.amount = expense.amount
+        tx.factory_name = expense.factory_name
+        tx.account_holder_id = expense.account_holder_id
+        tx.description = f"Manual Expense: {expense.expense_description}"
+
+    db.commit()
+    db.refresh(expense)
+    
+    ah_name = None
+    if expense.account_holder_id:
+        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == expense.account_holder_id).first()
+        if ah:
+            ah_name = ah.name
+
+    return schemas.ExpenseOut(
+        id=expense.id,
+        factory_name=expense.factory_name,
+        date=expense.date,
+        expense_description=expense.expense_description,
+        amount=expense.amount,
+        account_holder_id=expense.account_holder_id,
+        is_from_sale=expense.is_from_sale,
+        account_holder_name=ah_name
+    )
+
+# Export Full Cloud Backup
+def export_backup(db: Session):
+    goods = [goods_to_out(g).model_dump() for g in db.query(models.Goods).all()]
+    sales = [s.__dict__ for s in db.query(models.Sale).all()]
+    for s in sales:
+        s.pop('_sa_instance_state', None)
+    account_holders = [ah.__dict__ for ah in db.query(models.AccountHolder).all()]
+    for ah in account_holders:
+        ah.pop('_sa_instance_state', None)
+    expenses = [e.__dict__ for e in db.query(models.Expense).all()]
+    for e in expenses:
+        e.pop('_sa_instance_state', None)
+    transactions = [t.__dict__ for t in db.query(models.Transaction).all()]
+    for t in transactions:
+        t.pop('_sa_instance_state', None)
+
+    return {
+        "app": "Bluesun Manager ERP",
+        "version": "1.0",
+        "storage": "Google Cloud Drive (5TB Reserved)",
+        "goods": goods,
+        "sales": sales,
+        "account_holders": account_holders,
+        "expenses": expenses,
+        "transactions": transactions
+    }
+
+# Delete Goods (Safe Cascading)
+def delete_goods(db: Session, goods_id: int):
+    goods = db.query(models.Goods).filter(models.Goods.id == goods_id).first()
+    if not goods:
+        raise HTTPException(status_code=404, detail="Goods record not found")
+    
+    # Delete associated sales, expenses from sales, and transactions
+    sales = db.query(models.Sale).filter(models.Sale.goods_id == goods_id).all()
+    for s in sales:
+        db.query(models.Transaction).filter(models.Transaction.sales_id == s.id).delete()
+        db.query(models.Expense).filter(models.Expense.is_from_sale == True, models.Expense.date == s.date, models.Expense.amount == s.total_amount).delete()
+    
+    db.query(models.Sale).filter(models.Sale.goods_id == goods_id).delete()
+    db.query(models.Transaction).filter(models.Transaction.goods_id == goods_id).delete()
+    db.delete(goods)
+    db.commit()
+    return {"message": "Goods record deleted successfully"}
+
+# Delete Sale (Safe Cascading)
+def delete_sale(db: Session, sale_id: int):
+    sale = db.query(models.Sale).filter(models.Sale.id == sale_id).first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale record not found")
+    
+    goods = db.query(models.Goods).filter(models.Goods.id == sale.goods_id).first()
+    if goods:
+        goods.sold_pcs = max(0, goods.sold_pcs - sale.quantity)
+        goods.total_earnings = max(0.0, goods.total_earnings - sale.total_amount)
+
+    if sale.receiver == "Saving" and sale.account_holder_id:
+        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
+        if ah:
+            ah.current_balance = max(0.0, ah.current_balance - sale.total_amount)
+    elif sale.receiver == "Expense":
+        db.query(models.Expense).filter(
+            models.Expense.factory_name == (goods.factory_name if goods else "Jeans"),
+            models.Expense.date == sale.date,
+            models.Expense.amount == sale.total_amount,
+            models.Expense.is_from_sale == True
+        ).delete()
+
+    db.query(models.Transaction).filter(models.Transaction.sales_id == sale.id).delete()
+    db.delete(sale)
+    db.commit()
+    return {"message": "Sale deleted successfully"}
+
+# Delete Account Holder (Safe Cascading)
+def delete_account_holder(db: Session, account_holder_id: int):
+    ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == account_holder_id).first()
+    if not ah:
+        raise HTTPException(status_code=404, detail="Account Holder not found")
+    
+    # Nullify references in Sales and Expenses so deletion will never fail Foreign Key constraints
+    db.query(models.Sale).filter(models.Sale.account_holder_id == account_holder_id).update({models.Sale.account_holder_id: None})
+    db.query(models.Expense).filter(models.Expense.account_holder_id == account_holder_id).update({models.Expense.account_holder_id: None})
+    db.query(models.Transaction).filter(models.Transaction.account_holder_id == account_holder_id).delete()
+    
+    db.delete(ah)
+    db.commit()
+    return {"message": "Account Holder deleted successfully"}
+
+# Delete Expense (Safe Cascading)
+def delete_expense(db: Session, expense_id: int):
+    expense = db.query(models.Expense).filter(models.Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense record not found")
+    
+    if expense.account_holder_id:
+        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == expense.account_holder_id).first()
+        if ah:
+            ah.current_balance += expense.amount
+
+    db.query(models.Transaction).filter(models.Transaction.expense_id == expense.id).delete()
+    db.delete(expense)
+    db.commit()
+    return {"message": "Expense deleted successfully"}
+
+# Reset Database to Fresh Setup
+def reset_database(db: Session):
+    db.query(models.Transaction).delete()
+    db.query(models.Sale).delete()
+    db.query(models.Expense).delete()
+    db.query(models.Goods).delete()
+    db.query(models.AccountHolder).delete()
+    db.query(models.BusinessUnit).delete()
+    db.commit()
+
+    # Re-create 3 Business Units
+    for f in ["Jeans", "Shirts", "Formals"]:
+        db.add(models.BusinessUnit(name=f))
+    
+    # Re-create clean default Account Holders with 0 balance
+    db.add_all([
+        models.AccountHolder(name="Main Corporate Account", current_balance=0.0),
+        models.AccountHolder(name="Factory Reserve Fund", current_balance=0.0),
+        models.AccountHolder(name="Petty Cash Account", current_balance=0.0),
+    ])
+    db.commit()
+    return {"message": "Database successfully reset to fresh setup!"}
+
+
+
+

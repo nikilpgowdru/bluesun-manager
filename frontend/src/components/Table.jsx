@@ -75,7 +75,10 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No re
             sortedData.map((row, rowIdx) => (
               <tr
                 key={row.id || rowIdx}
-                onClick={() => onRowClick && onRowClick(row)}
+                onClick={(e) => {
+                  if (e.target.closest('button') || e.target.closest('a')) return;
+                  if (onRowClick) onRowClick(row);
+                }}
                 className={`${
                   onRowClick ? 'cursor-pointer hover:bg-brand-50/50 transition-colors' : ''
                 } ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}

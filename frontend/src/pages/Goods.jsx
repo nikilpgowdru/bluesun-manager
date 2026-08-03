@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Table from '../components/Table';
 import GoodsModal from '../components/GoodsModal';
-import { getGoods } from '../api';
-import { Plus, Filter, Calendar, Factory } from 'lucide-react';
+import { getGoods, deleteGoods } from '../api';
+import { Plus, Filter, Calendar, Factory, Trash2, Edit3 } from 'lucide-react';
 
 export default function Goods() {
   const navigate = useNavigate();
@@ -12,7 +12,8 @@ export default function Goods() {
   const [factory, setFactory] = useState('All');
   const [month, setMonth] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [selectedGoodsToEdit, setSelectedGoodsToEdit] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchGoods();
@@ -27,6 +28,24 @@ export default function Goods() {
       console.error('Error fetching goods:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (e, row) => {
+    e.stopPropagation();
+    setSelectedGoodsToEdit(row);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (e, id, brandName) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete product "${brandName}"? All associated sales and transactions will also be deleted.`)) {
+      try {
+        await deleteGoods(id);
+        fetchGoods();
+      } catch (err) {
+        alert(err.response?.data?.detail || 'Failed to delete goods item.');
+      }
     }
   };
 
@@ -82,8 +101,31 @@ export default function Goods() {
       accessor: 'total_earnings',
       render: (row) => (
         <span className="font-extrabold text-slate-900">
-          ${row.total_earnings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.total_earnings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      sortable: false,
+      render: (row) => (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => handleEdit(e, row)}
+            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Edit Goods Item"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => handleDelete(e, row.id, row.brand_name)}
+            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+            title="Delete Goods Record"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -130,7 +172,10 @@ export default function Goods() {
 
         {/* Add Goods Button */}
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setSelectedGoodsToEdit(null);
+            setIsModalOpen(true);
+          }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs tracking-wide shadow-md shadow-brand-600/20 hover:bg-brand-700 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -164,10 +209,14 @@ export default function Goods() {
         </div>
       )}
 
-      {/* Add Goods Modal */}
+      {/* Add / Edit Goods Modal */}
       <GoodsModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedGoodsToEdit(null);
+        }}
+        initialData={selectedGoodsToEdit}
         onSuccess={fetchGoods}
       />
     </Layout>

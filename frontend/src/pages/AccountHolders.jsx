@@ -3,12 +3,13 @@ import Layout from '../components/Layout';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
 import AccountHolderModal from '../components/AccountHolderModal';
-import { getAccountHolders, getAccountHistory } from '../api';
-import { Plus, Users, Landmark, History, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { getAccountHolders, getAccountHistory, deleteAccountHolder } from '../api';
+import { Plus, Landmark, History, ArrowUpRight, ArrowDownLeft, Trash2, Edit3 } from 'lucide-react';
 
 export default function AccountHolders() {
   const [accountHolders, setAccountHolders] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedAccountToEdit, setSelectedAccountToEdit] = useState(null);
   const [selectedAccountHistory, setSelectedAccountHistory] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -43,6 +44,24 @@ export default function AccountHolders() {
     }
   };
 
+  const handleEdit = (e, row) => {
+    e.stopPropagation();
+    setSelectedAccountToEdit(row);
+    setIsAddModalOpen(true);
+  };
+
+  const handleDelete = async (e, id, name) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete Account Holder "${name}"?`)) {
+      try {
+        await deleteAccountHolder(id);
+        fetchAccountHolders();
+      } catch (err) {
+        alert(err.response?.data?.detail || 'Failed to delete Account Holder.');
+      }
+    }
+  };
+
   const columns = [
     {
       header: 'Account Holder Name',
@@ -61,8 +80,31 @@ export default function AccountHolders() {
       accessor: 'current_balance',
       render: (row) => (
         <span className={`font-extrabold text-base ${row.current_balance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-          ${row.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      sortable: false,
+      render: (row) => (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => handleEdit(e, row)}
+            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Edit Account Holder"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => handleDelete(e, row.id, row.name)}
+            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+            title="Delete Account Holder"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -89,7 +131,7 @@ export default function AccountHolders() {
       accessor: 'amount',
       render: (row) => (
         <span className={`font-extrabold ${row.type === 'Sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {row.type === 'Sale' ? '+' : '-'}${row.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          {row.type === 'Sale' ? '+' : '-'}₹{row.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -104,7 +146,10 @@ export default function AccountHolders() {
           <p className="text-xs text-slate-500 font-medium">Balances update automatically from sales deposits and manual expenses.</p>
         </div>
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setSelectedAccountToEdit(null);
+            setIsAddModalOpen(true);
+          }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs tracking-wide shadow-md shadow-brand-600/20 hover:bg-brand-700 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -162,7 +207,7 @@ export default function AccountHolders() {
               <div className="text-right">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Balance</span>
                 <h4 className="text-xl font-extrabold text-emerald-600">
-                  ${selectedAccountHistory.account_holder.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ₹{selectedAccountHistory.account_holder.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </h4>
               </div>
             </div>
@@ -181,10 +226,14 @@ export default function AccountHolders() {
         ) : null}
       </Modal>
 
-      {/* Add Account Holder Modal */}
+      {/* Add / Edit Account Holder Modal */}
       <AccountHolderModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setSelectedAccountToEdit(null);
+        }}
+        initialData={selectedAccountToEdit}
         onSuccess={fetchAccountHolders}
       />
     </Layout>

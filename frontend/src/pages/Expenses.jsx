@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import Table from '../components/Table';
 import ExpenseModal from '../components/ExpenseModal';
-import { getExpenses } from '../api';
-import { Plus, Filter, Calendar, CreditCard, Factory } from 'lucide-react';
+import { getExpenses, deleteExpense } from '../api';
+import { Plus, Filter, Calendar, Factory, Trash2, Edit3 } from 'lucide-react';
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [factory, setFactory] = useState('All');
   const [month, setMonth] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedExpenseToEdit, setSelectedExpenseToEdit] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,6 +26,24 @@ export default function Expenses() {
       console.error('Error fetching expenses:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (e, row) => {
+    e.stopPropagation();
+    setSelectedExpenseToEdit(row);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (e, id, desc) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete expense record "${desc}"?`)) {
+      try {
+        await deleteExpense(id);
+        fetchExpenses();
+      } catch (err) {
+        alert(err.response?.data?.detail || 'Failed to delete expense.');
+      }
     }
   };
 
@@ -67,8 +86,33 @@ export default function Expenses() {
       accessor: 'amount',
       render: (row) => (
         <span className="font-extrabold text-amber-600">
-          ${row.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
+      ),
+    },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      sortable: false,
+      render: (row) => (
+        <div className="flex items-center gap-1">
+          {!row.is_from_sale && (
+            <button
+              onClick={(e) => handleEdit(e, row)}
+              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+              title="Edit Expense"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={(e) => handleDelete(e, row.id, row.expense_description)}
+            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+            title="Delete Expense Record"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -115,7 +159,10 @@ export default function Expenses() {
 
         {/* Add Manual Expense Button */}
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setSelectedExpenseToEdit(null);
+            setIsModalOpen(true);
+          }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/20 hover:bg-amber-700 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -148,10 +195,14 @@ export default function Expenses() {
         </div>
       )}
 
-      {/* Manual Expense Modal */}
+      {/* Add / Edit Manual Expense Modal */}
       <ExpenseModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedExpenseToEdit(null);
+        }}
+        initialData={selectedExpenseToEdit}
         onSuccess={fetchExpenses}
       />
     </Layout>

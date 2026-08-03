@@ -53,7 +53,7 @@ export default function Dashboard() {
       accessor: 'sales',
       render: (row) => (
         <span className="font-bold text-emerald-600">
-          ${row.sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -62,7 +62,7 @@ export default function Dashboard() {
       accessor: 'expenses',
       render: (row) => (
         <span className="font-bold text-amber-600">
-          ${row.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -71,7 +71,7 @@ export default function Dashboard() {
       accessor: 'profit',
       render: (row) => (
         <span className={`font-extrabold ${row.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
-          ${row.profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          ₹{row.profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
@@ -146,22 +146,22 @@ export default function Dashboard() {
             />
             <StatCard
               title="Total Sales"
-              value={`$${stats.total_sales.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              value={`₹${stats.total_sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
               icon={DollarSign}
-              trend="+12.4%"
+              trend="+0%"
               subtitle="Total Gross Earnings"
               color="emerald"
             />
             <StatCard
               title="Total Expenses"
-              value={`$${stats.total_expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              value={`₹${stats.total_expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
               icon={TrendingDown}
               subtitle="Raw Materials & Factory Costs"
               color="amber"
             />
             <StatCard
               title="Net Profit"
-              value={`$${stats.net_profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              value={`₹${stats.net_profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
               icon={TrendingUp}
               trend={stats.net_profit >= 0 ? "+Net Gain" : "-Deficit"}
               subtitle="Sales Minus Expenses"

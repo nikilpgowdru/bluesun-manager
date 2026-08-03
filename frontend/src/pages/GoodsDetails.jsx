@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Table from '../components/Table';
 import SaleModal from '../components/SaleModal';
-import { getGoodsDetail } from '../api';
-import { ArrowLeft, Plus, Package, DollarSign, Tag, Factory, Calendar, CheckCircle2 } from 'lucide-react';
+import { getGoodsDetail, deleteGoods, deleteSale } from '../api';
+import { ArrowLeft, Plus, Trash2, Factory, Calendar } from 'lucide-react';
 
 export default function GoodsDetails() {
   const { id } = useParams();
@@ -29,6 +29,29 @@ export default function GoodsDetails() {
     }
   };
 
+  const handleDeleteProduct = async () => {
+    if (window.confirm(`Are you sure you want to delete product "${goodsData?.goods?.brand_name}"?`)) {
+      try {
+        await deleteGoods(id);
+        navigate('/goods');
+      } catch (err) {
+        alert(err.response?.data?.detail || 'Failed to delete product.');
+      }
+    }
+  };
+
+  const handleDeleteSale = async (e, saleId) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this sale record? Available stock will be restored.")) {
+      try {
+        await deleteSale(saleId);
+        fetchGoodsDetail();
+      } catch (err) {
+        alert(err.response?.data?.detail || 'Failed to delete sale.');
+      }
+    }
+  };
+
   const salesColumns = [
     { header: 'Date', accessor: 'date' },
     {
@@ -44,12 +67,12 @@ export default function GoodsDetails() {
     {
       header: 'Price (Unit)',
       accessor: 'price',
-      render: (row) => <span>${row.price.toFixed(2)}</span>,
+      render: (row) => <span>₹{row.price.toFixed(2)}</span>,
     },
     {
       header: 'Total Amount',
       accessor: 'total_amount',
-      render: (row) => <span className="font-extrabold text-slate-900">${row.total_amount.toFixed(2)}</span>,
+      render: (row) => <span className="font-extrabold text-slate-900">₹{row.total_amount.toFixed(2)}</span>,
     },
     {
       header: 'Receipt',
@@ -72,6 +95,20 @@ export default function GoodsDetails() {
             {row.receiver === 'Saving' ? row.account_holder_name || 'Account Deposit' : row.expense_description || 'Expense Entry'}
           </span>
         </div>
+      ),
+    },
+    {
+      header: 'Delete',
+      accessor: 'delete_action',
+      sortable: false,
+      render: (row) => (
+        <button
+          onClick={(e) => handleDeleteSale(e, row.id)}
+          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+          title="Delete Sale Record"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       ),
     },
   ];
@@ -106,8 +143,8 @@ export default function GoodsDetails() {
 
   return (
     <Layout pageTitle={`Goods Details - ${goods.brand_name}`}>
-      {/* Top Header Back Button */}
-      <div className="mb-6 flex items-center justify-between">
+      {/* Top Header Back & Action Buttons */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <button
           onClick={() => navigate('/goods')}
           className="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs"
@@ -116,14 +153,24 @@ export default function GoodsDetails() {
           Back to Goods List
         </button>
 
-        <button
-          onClick={() => setIsSaleModalOpen(true)}
-          disabled={goods.available_pcs <= 0}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs tracking-wide shadow-md shadow-brand-600/20 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Sale
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDeleteProduct}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs border border-rose-200 hover:bg-rose-100 transition-all"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Product
+          </button>
+
+          <button
+            onClick={() => setIsSaleModalOpen(true)}
+            disabled={goods.available_pcs <= 0}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 text-white font-bold text-xs tracking-wide shadow-md shadow-brand-600/20 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Sale
+          </button>
+        </div>
       </div>
 
       {/* Product Overview Cards */}
@@ -148,7 +195,7 @@ export default function GoodsDetails() {
             <div>
               <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Earnings</div>
               <div className="text-xl font-extrabold text-emerald-600">
-                ${goods.total_earnings.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                ₹{goods.total_earnings.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
             </div>
             <div className="w-px h-8 bg-slate-200" />

@@ -77,7 +77,7 @@ export default function Transactions() {
       accessor: 'amount',
       render: (row) => (
         <span className={`font-extrabold ${row.type === 'Sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {row.type === 'Sale' ? '+' : '-'}${row.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          {row.type === 'Sale' ? '+' : '-'}₹{row.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       )
     },
