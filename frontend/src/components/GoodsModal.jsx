@@ -44,7 +44,7 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
     const rejected = parseInt(formData.rejected_pcs) || 0;
 
     if (!formData.type.trim() || !formData.brand_name.trim()) {
-      setError('Please fill in all required garment details.');
+      setError('Please fill in all required fields.');
       return;
     }
     if (isNaN(total) || total <= 0) {
@@ -78,77 +78,77 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err.response?.data?.detail || `Failed to ${initialData ? 'update' : 'create'} Garment record.`);
+      setError(err.response?.data?.detail || `Failed to ${initialData ? 'update' : 'create'} Goods record.`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Garment Collection" : "Add Garment Collection"}>
-      <form onSubmit={handleSubmit} className="space-y-4 text-slate-200 font-semibold">
+    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Production Goods" : "Add Production Goods"}>
+      <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold rounded-xl">
+          <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-200">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">
-            Apparel Factory Line *
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Factory *
           </label>
           <select
             value={formData.factory_name}
             onChange={(e) => setFormData({ ...formData, factory_name: e.target.value })}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-800 text-sm font-bold bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="Jeans">👖 Jeans Line</option>
-            <option value="Shirts">👔 Shirts Line</option>
-            <option value="Formals">🧥 Formals Line</option>
+            <option value="Jeans">Jeans</option>
+            <option value="Shirts">Shirts</option>
+            <option value="Formals">Formals</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">
-            Garment Type *
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Type *
           </label>
           <input
             type="text"
-            placeholder="e.g. Slim Fit Denim / Oxford Shirt / Tailored Suit"
+            placeholder="e.g. Slim Fit Denim / Oxford Shirt"
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-800 text-sm bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">
-            Brand Collection Name *
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Brand Name *
           </label>
           <input
             type="text"
-            placeholder="e.g. Bluesun Royal Couture"
+            placeholder="e.g. Bluesun Urban / Bluesun Royal"
             value={formData.brand_name}
             onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-800 text-sm bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
             Manufacture Date *
           </label>
           <input
             type="date"
             value={formData.manufacture_date}
             onChange={(e) => setFormData({ ...formData, manufacture_date: e.target.value })}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-800 text-sm bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
               Total PCS *
             </label>
             <input
@@ -157,39 +157,39 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
               placeholder="e.g. 1000"
               value={formData.total_pcs}
               onChange={(e) => setFormData({ ...formData, total_pcs: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-800 text-sm bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
               Rejected PCS
             </label>
             <input
               type="number"
               min="0"
-              placeholder="e.g. 10"
+              placeholder="e.g. 25"
               value={formData.rejected_pcs}
               onChange={(e) => setFormData({ ...formData, rejected_pcs: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-800 text-sm bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
 
-        <div className="pt-4 flex justify-end gap-3 border-t border-slate-800">
+        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-black text-slate-400 hover:text-white uppercase tracking-wider transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-white bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 shadow-lg shadow-indigo-600/30 disabled:opacity-50 transition-all ring-1 ring-white/20"
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Saving...' : (initialData ? 'Update Collection' : 'Save Garment Collection')}
+            {loading ? 'Saving...' : (initialData ? 'Update Goods' : 'Save Production Goods')}
           </button>
         </div>
       </form>

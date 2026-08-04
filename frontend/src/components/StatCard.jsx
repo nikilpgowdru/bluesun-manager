@@ -1,24 +1,29 @@
 import React from 'react';
 
-export default function StatCard({ title, value, icon: Icon, trend, subtitle }) {
-  return (
-    <div className="gold-card rounded-2xl p-6 transition-all duration-300 relative overflow-hidden group">
-      {/* Background Ambient Gold Glow */}
-      <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-400/20 transition-all" />
+export default function StatCard({ title, value, icon: Icon, trend, subtitle, color = "blue" }) {
+  const colorStyles = {
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    sky: "bg-sky-50 text-sky-600 border-sky-100",
+    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    amber: "bg-amber-50 text-amber-600 border-amber-100",
+  };
 
-      <div className="flex items-center justify-between relative z-10">
-        <span className="text-[11px] font-black uppercase tracking-widest text-amber-300 font-heading">{title}</span>
+  return (
+    <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{title}</span>
         {Icon && (
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-lg ring-1 ring-amber-400/20">
+          <div className={`p-3 rounded-xl border ${colorStyles[color] || colorStyles.blue}`}>
             <Icon className="w-5 h-5" />
           </div>
         )}
       </div>
-      <div className="mt-5 relative z-10">
-        <div className="text-3xl font-black text-white tracking-tight font-heading gold-text-shimmer">{value}</div>
+      <div className="mt-4">
+        <div className="text-3xl font-extrabold text-slate-900 tracking-tight">{value}</div>
         {(subtitle || trend) && (
-          <div className="mt-2.5 flex items-center gap-2 text-xs font-semibold text-amber-200/70">
-            {trend && <span className="text-obsidian-950 font-black bg-amber-400 px-2 py-0.5 rounded shadow-sm">{trend}</span>}
+          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 font-medium">
+            {trend && <span className="text-emerald-600 font-semibold">{trend}</span>}
             <span>{subtitle}</span>
           </div>
         )}

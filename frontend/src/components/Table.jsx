@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
-export default function Table({ columns, data, onRowClick, emptyMessage = "No garment records found" }) {
+export default function Table({ columns, data, onRowClick, emptyMessage = "No records found" }) {
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
 
@@ -41,26 +41,26 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
   }, [data, sortColumn, sortDirection]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-amber-500/20 bg-obsidian-900 shadow-2xl">
-      <table className="w-full text-left text-xs border-collapse">
-        <thead className="bg-obsidian-950 border-b border-amber-500/20 text-[11px] font-black text-amber-300 uppercase tracking-widest">
+    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
+      <table className="w-full text-left text-sm border-collapse">
+        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
           <tr>
             {columns.map((col, idx) => (
               <th
                 key={idx}
                 onClick={() => handleSort(col.accessor, col.sortable !== false)}
-                className={`py-4 px-5 select-none ${
-                  col.sortable !== false ? 'cursor-pointer hover:bg-obsidian-900 transition-colors' : ''
+                className={`py-3.5 px-4 select-none ${
+                  col.sortable !== false ? 'cursor-pointer hover:bg-slate-100/80 transition-colors' : ''
                 } ${col.className || ''}`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <span>{col.header}</span>
                   {col.sortable !== false && (
-                    <span className="text-amber-400">
+                    <span className="text-slate-400">
                       {sortColumn === col.accessor ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-400" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
+                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-blue-600" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
                       ) : (
-                        <ArrowUpDown className="w-3.5 h-3.5 text-amber-400/40 hover:text-amber-400" />
+                        <ArrowUpDown className="w-3.5 h-3.5 hover:text-slate-600" />
                       )}
                     </span>
                   )}
@@ -69,7 +69,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-amber-500/10 text-amber-100 font-semibold tracking-wide">
+        <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
           {sortedData && sortedData.length > 0 ? (
             sortedData.map((row, rowIdx) => (
               <tr
@@ -78,12 +78,12 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
                   if (e.target.closest('button') || e.target.closest('a')) return;
                   if (onRowClick) onRowClick(row);
                 }}
-                className={`transition-all duration-200 ${
-                  onRowClick ? 'cursor-pointer hover:bg-amber-500/10 hover:border-l-4 hover:border-amber-400' : ''
-                } ${rowIdx % 2 === 0 ? 'bg-obsidian-900' : 'bg-obsidian-950/60'}`}
+                className={`${
+                  onRowClick ? 'cursor-pointer hover:bg-blue-50/50 transition-colors' : ''
+                } ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
               >
                 {columns.map((col, colIdx) => (
-                  <td key={colIdx} className={`py-4 px-5 ${col.className || ''}`}>
+                  <td key={colIdx} className={`py-3.5 px-4 ${col.className || ''}`}>
                     {col.render ? col.render(row) : row[col.accessor]}
                   </td>
                 ))}
@@ -91,7 +91,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-16 text-center text-amber-400/50 font-bold uppercase tracking-widest">
+              <td colSpan={columns.length} className="py-12 text-center text-slate-400 font-medium">
                 {emptyMessage}
               </td>
             </tr>
