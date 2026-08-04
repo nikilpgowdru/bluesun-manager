@@ -54,12 +54,17 @@ def get_goods_detail(db: Session, goods_id: int):
     if not goods:
         raise HTTPException(status_code=404, detail="Goods record not found")
     
-    sales = db.query(models.Sale).filter(models.Sale.goods_id == goods_id).order_by(models.Sale.date.desc()).all()
+    try:
+        sales = db.query(models.Sale).filter(models.Sale.goods_id == goods_id).order_by(models.Sale.date.desc()).all()
+    except Exception as err:
+        db.rollback()
+        print("Safely handling un-migrated sales query:", err)
+        sales = []
     
     sales_out = []
     for s in sales:
         ah_name = None
-        if s.account_holder_id:
+        if getattr(s, 'account_holder_id', None):
             ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == s.account_holder_id).first()
             if ah:
                 ah_name = ah.name
@@ -75,8 +80,8 @@ def get_goods_detail(db: Session, goods_id: int):
             total_amount=s.total_amount,
             receipt=s.receipt,
             receiver=s.receiver,
-            account_holder_id=s.account_holder_id,
-            expense_description=s.expense_description,
+            account_holder_id=getattr(s, 'account_holder_id', None),
+            expense_description=getattr(s, 'expense_description', None),
             account_holder_name=ah_name
         ))
 

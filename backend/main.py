@@ -8,8 +8,32 @@ import schemas
 import crud
 import seed
 
+from sqlalchemy import text, inspect
+
 # Auto create database tables on launch
 models.Base.metadata.create_all(bind=database.engine)
+
+# Auto migrate existing tables for new GST columns
+def run_auto_migrations(engine):
+    try:
+        inspector = inspect(engine)
+        if 'sales' in inspector.get_table_names():
+            columns = [c['name'] for c in inspector.get_columns('sales')]
+            with engine.begin() as conn:
+                if 'gst_percent' not in columns:
+                    try:
+                        conn.execute(text("ALTER TABLE sales ADD COLUMN gst_percent FLOAT DEFAULT 0.0"))
+                    except Exception as e:
+                        print("Migration gst_percent info:", e)
+                if 'gst_amount' not in columns:
+                    try:
+                        conn.execute(text("ALTER TABLE sales ADD COLUMN gst_amount FLOAT DEFAULT 0.0"))
+                    except Exception as e:
+                        print("Migration gst_amount info:", e)
+    except Exception as err:
+        print("Auto-migration exception:", err)
+
+run_auto_migrations(database.engine)
 
 # Seed sample data on launch
 db_session = database.SessionLocal()
