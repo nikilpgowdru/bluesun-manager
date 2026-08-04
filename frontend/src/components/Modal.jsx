@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, children, maxWidth = "max-w-xl" }) {
   useEffect(() => {
@@ -19,16 +19,18 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = "ma
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className={`bg-white rounded-2xl shadow-2xl border border-slate-100 w-full ${maxWidth} overflow-hidden transform transition-all animate-in zoom-in-95 duration-200`}
+        className={`atelier-card rounded-2xl shadow-2xl border border-slate-800 w-full ${maxWidth} overflow-hidden transform transition-all animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/80">
+          <h3 className="text-base font-black text-white uppercase tracking-wider font-heading flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400" /> {title}
+          </h3>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-full transition-colors"
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-900 rounded-full border border-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

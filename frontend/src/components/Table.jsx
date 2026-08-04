@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
-export default function Table({ columns, data, onRowClick, emptyMessage = "No records found" }) {
+export default function Table({ columns, data, onRowClick, emptyMessage = "No garment records found" }) {
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
 
@@ -24,7 +24,6 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No re
       if (valA === null || valA === undefined) valA = '';
       if (valB === null || valB === undefined) valB = '';
 
-      // Date comparison
       if (typeof valA === 'string' && valA.match(/^\d{4}-\d{2}-\d{2}/)) {
         return sortDirection === 'asc'
           ? new Date(valA) - new Date(valB)
@@ -42,26 +41,26 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No re
   }, [data, sortColumn, sortDirection]);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full text-left text-sm border-collapse">
-        <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
+    <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/90 shadow-2xl backdrop-blur-md">
+      <table className="w-full text-left text-xs border-collapse">
+        <thead className="bg-slate-950 border-b border-slate-800 text-[11px] font-black text-slate-400 uppercase tracking-widest">
           <tr>
             {columns.map((col, idx) => (
               <th
                 key={idx}
                 onClick={() => handleSort(col.accessor, col.sortable !== false)}
-                className={`py-3.5 px-4 select-none ${
-                  col.sortable !== false ? 'cursor-pointer hover:bg-slate-100/80 transition-colors' : ''
+                className={`py-4 px-5 select-none ${
+                  col.sortable !== false ? 'cursor-pointer hover:bg-slate-900 transition-colors' : ''
                 } ${col.className || ''}`}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <span>{col.header}</span>
                   {col.sortable !== false && (
-                    <span className="text-slate-400">
+                    <span className="text-amber-400">
                       {sortColumn === col.accessor ? (
-                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-brand-600" /> : <ArrowDown className="w-3.5 h-3.5 text-brand-600" />
+                        sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-400" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
                       ) : (
-                        <ArrowUpDown className="w-3.5 h-3.5 hover:text-slate-600" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 hover:text-slate-400" />
                       )}
                     </span>
                   )}
@@ -70,7 +69,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No re
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+        <tbody className="divide-y divide-slate-800/60 text-slate-200 font-semibold tracking-wide">
           {sortedData && sortedData.length > 0 ? (
             sortedData.map((row, rowIdx) => (
               <tr
@@ -79,12 +78,12 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No re
                   if (e.target.closest('button') || e.target.closest('a')) return;
                   if (onRowClick) onRowClick(row);
                 }}
-                className={`${
-                  onRowClick ? 'cursor-pointer hover:bg-brand-50/50 transition-colors' : ''
-                } ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
+                className={`transition-all duration-200 ${
+                  onRowClick ? 'cursor-pointer hover:bg-indigo-950/40 hover:border-l-4 hover:border-amber-400' : ''
+                } ${rowIdx % 2 === 0 ? 'bg-slate-900/60' : 'bg-slate-950/40'}`}
               >
                 {columns.map((col, colIdx) => (
-                  <td key={colIdx} className={`py-3.5 px-4 ${col.className || ''}`}>
+                  <td key={colIdx} className={`py-4 px-5 ${col.className || ''}`}>
                     {col.render ? col.render(row) : row[col.accessor]}
                   </td>
                 ))}
@@ -92,7 +91,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No re
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-12 text-center text-slate-400 font-medium">
+              <td colSpan={columns.length} className="py-16 text-center text-slate-500 font-bold uppercase tracking-wider">
                 {emptyMessage}
               </td>
             </tr>
