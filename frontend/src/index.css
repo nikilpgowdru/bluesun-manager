@@ -4,38 +4,49 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans;
+    @apply bg-obsidian-950 text-slate-100 antialiased font-sans;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-tight;
+    @apply font-heading tracking-tight text-white;
   }
 }
 
-/* Glassmorphism & Fashion Atelier Utility Classes */
-.atelier-glass {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Luxury Black & Gold Design Utility Classes */
+.gold-card {
+  background: linear-gradient(145deg, #0d0d10 0%, #141418 100%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8), 0 0 15px rgba(245, 158, 11, 0.05);
 }
 
-.atelier-card {
-  background: linear-gradient(145deg, #111827 0%, #0f172a 100%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+.gold-card:hover {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 15px 35px -10px rgba(245, 158, 11, 0.2);
 }
 
-.atelier-card:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 15px 35px -10px rgba(79, 70, 229, 0.25);
+.gold-badge {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.08) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fef3c7;
 }
 
-.gold-glow {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+.gold-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #050505;
+  font-weight: 800;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+  transition: all 0.2s ease;
 }
 
-.indigo-glow {
-  box-shadow: 0 0 25px rgba(79, 70, 229, 0.3);
+.gold-btn:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 6px 25px rgba(245, 158, 11, 0.45);
+  transform: translateY(-1px);
+}
+
+.gold-text-shimmer {
+  background: linear-gradient(90deg, #fef3c7 0%, #f59e0b 50%, #fef3c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Custom Scrollbar */
@@ -44,14 +55,14 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #050505;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #26262e;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #f59e0b;
 }
 
 /* Print Styles */
@@ -65,11 +76,5 @@
   }
   .print-only {
     display: block !important;
-  }
-  .print-container {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
   }
 }

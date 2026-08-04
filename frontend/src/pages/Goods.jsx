@@ -52,32 +52,32 @@ export default function Goods() {
   const getFactoryBadge = (factoryName) => {
     switch (factoryName) {
       case 'Jeans':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">👖 Jeans</span>;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg gold-badge">👖 Jeans</span>;
       case 'Shirts':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30">👔 Shirts</span>;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg gold-badge">👔 Shirts</span>;
       case 'Formals':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">🧥 Formals</span>;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg gold-badge">🧥 Formals</span>;
       default:
-        return <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">{factoryName}</span>;
+        return <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-black rounded-lg gold-badge">{factoryName}</span>;
     }
   };
 
   const columns = [
     {
-      header: 'Apparel Line',
+      header: 'Couture Line',
       accessor: 'factory_name',
       render: (row) => getFactoryBadge(row.factory_name),
     },
     { 
-      header: 'Type', 
+      header: 'Garment Type', 
       accessor: 'type',
-      render: (row) => <span className="font-bold text-slate-300">{row.type}</span>
+      render: (row) => <span className="font-bold text-amber-100">{row.type}</span>
     },
     {
       header: 'Brand Collection',
       accessor: 'brand_name',
       render: (row) => (
-        <span className="font-black text-amber-300 flex items-center gap-1.5">
+        <span className="font-black text-amber-400 flex items-center gap-1.5">
           <Crown className="w-3.5 h-3.5 text-amber-400" /> {row.brand_name}
         </span>
       ),
@@ -86,7 +86,7 @@ export default function Goods() {
     {
       header: 'Total PCS',
       accessor: 'total_pcs',
-      render: (row) => <span className="font-bold text-slate-200">{row.total_pcs.toLocaleString()}</span>,
+      render: (row) => <span className="font-bold text-amber-200">{row.total_pcs.toLocaleString()}</span>,
     },
     {
       header: 'Rejected PCS',
@@ -102,7 +102,7 @@ export default function Goods() {
       header: 'Available PCS',
       accessor: 'available_pcs',
       render: (row) => (
-        <span className="font-black text-indigo-300 bg-indigo-500/20 px-2.5 py-1 rounded-lg border border-indigo-500/30">
+        <span className="font-black text-obsidian-950 bg-amber-400 px-3 py-1 rounded-lg shadow-sm">
           {row.available_pcs.toLocaleString()}
         </span>
       ),
@@ -110,10 +110,10 @@ export default function Goods() {
     {
       header: 'Sold PCS',
       accessor: 'sold_pcs',
-      render: (row) => <span className="font-bold text-slate-300">{row.sold_pcs.toLocaleString()}</span>,
+      render: (row) => <span className="font-bold text-amber-200">{row.sold_pcs.toLocaleString()}</span>,
     },
     {
-      header: 'Total Earnings',
+      header: 'Total Revenue',
       accessor: 'total_earnings',
       render: (row) => (
         <span className="font-black text-emerald-400 text-sm">
@@ -129,7 +129,7 @@ export default function Goods() {
         <div className="flex items-center gap-1.5">
           <button
             onClick={(e) => handleEdit(e, row)}
-            className="p-2 text-indigo-400 hover:text-white hover:bg-indigo-500/20 rounded-lg border border-indigo-500/30 transition-all"
+            className="p-2 text-amber-400 hover:text-obsidian-950 hover:bg-amber-400 rounded-lg border border-amber-500/30 transition-all"
             title="Edit Collection Record"
           >
             <Edit3 className="w-4 h-4" />
@@ -149,19 +149,19 @@ export default function Goods() {
   const months = ['All', '2026-08', '2026-07', '2026-06', '2026-05'];
 
   return (
-    <Layout pageTitle="Garment Inventory & Production">
+    <Layout pageTitle="Garment Inventory Register">
       {/* Control Bar */}
-      <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 atelier-card p-5 rounded-2xl border border-slate-800 shadow-xl">
+      <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 gold-card p-5 rounded-2xl">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-4">
           {/* Factory Filter */}
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-black text-slate-300 uppercase tracking-widest">Apparel Line:</span>
+            <span className="text-xs font-black text-amber-300 uppercase tracking-widest">Couture Line:</span>
             <select
               value={factory}
               onChange={(e) => setFactory(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-slate-800 bg-slate-950 font-bold text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="px-4 py-2 rounded-xl border border-amber-500/30 bg-obsidian-950 font-bold text-xs text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option value="All">All Lines</option>
               <option value="Jeans">Jeans</option>
@@ -171,13 +171,13 @@ export default function Goods() {
           </div>
 
           {/* Month Filter */}
-          <div className="flex items-center gap-2 border-l border-slate-800 pl-4">
+          <div className="flex items-center gap-2 border-l border-amber-500/20 pl-4">
             <Calendar className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-black text-slate-300 uppercase tracking-widest">Month:</span>
+            <span className="text-xs font-black text-amber-300 uppercase tracking-widest">Month:</span>
             <select
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-slate-800 bg-slate-950 font-bold text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="px-4 py-2 rounded-xl border border-amber-500/30 bg-obsidian-950 font-bold text-xs text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               {months.map(m => (
                 <option key={m} value={m}>{m === 'All' ? 'All Months' : m}</option>
@@ -192,7 +192,7 @@ export default function Goods() {
             setSelectedGoodsToEdit(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/30 hover:from-amber-400 hover:to-indigo-500 transition-all ring-1 ring-white/20"
+          className="gold-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest"
         >
           <Plus className="w-4 h-4" />
           Add Garment Collection
@@ -201,20 +201,20 @@ export default function Goods() {
 
       {/* Main Table */}
       {loading ? (
-        <div className="py-24 text-center text-amber-400/80 font-bold uppercase tracking-widest animate-pulse">
-          Loading Garment Collections...
+        <div className="py-24 text-center text-amber-400 font-bold uppercase tracking-widest animate-pulse">
+          Loading Garment Register...
         </div>
       ) : (
-        <div className="atelier-card rounded-2xl p-6 border border-slate-800 space-y-4">
+        <div className="gold-card rounded-2xl p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-black text-white uppercase tracking-wider font-heading flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400" /> Garment Inventory Register
+              <h3 className="text-base font-black uppercase tracking-wider font-heading flex items-center gap-2 gold-text-shimmer">
+                <Sparkles className="w-4 h-4 text-amber-400" /> Manufactured Garment Collections
               </h3>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Click any row to open sales details & issue new customer sales.</p>
+              <p className="text-xs text-amber-200/70 font-semibold mt-0.5">Click any collection row to issue new customer sales & view sale records.</p>
             </div>
-            <span className="text-xs font-black px-3 py-1 bg-amber-500/10 text-amber-400 rounded-full border border-amber-500/20 uppercase tracking-widest">
-              {goods.length} Collections Listed
+            <span className="text-xs font-black px-3 py-1 gold-badge rounded-full uppercase tracking-widest">
+              {goods.length} Collections
             </span>
           </div>
 

@@ -41,16 +41,16 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
   }, [data, sortColumn, sortDirection]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/90 shadow-2xl backdrop-blur-md">
+    <div className="overflow-x-auto rounded-2xl border border-amber-500/20 bg-obsidian-900 shadow-2xl">
       <table className="w-full text-left text-xs border-collapse">
-        <thead className="bg-slate-950 border-b border-slate-800 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+        <thead className="bg-obsidian-950 border-b border-amber-500/20 text-[11px] font-black text-amber-300 uppercase tracking-widest">
           <tr>
             {columns.map((col, idx) => (
               <th
                 key={idx}
                 onClick={() => handleSort(col.accessor, col.sortable !== false)}
                 className={`py-4 px-5 select-none ${
-                  col.sortable !== false ? 'cursor-pointer hover:bg-slate-900 transition-colors' : ''
+                  col.sortable !== false ? 'cursor-pointer hover:bg-obsidian-900 transition-colors' : ''
                 } ${col.className || ''}`}
               >
                 <div className="flex items-center gap-2">
@@ -60,7 +60,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
                       {sortColumn === col.accessor ? (
                         sortDirection === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-400" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-400" />
                       ) : (
-                        <ArrowUpDown className="w-3.5 h-3.5 text-slate-600 hover:text-slate-400" />
+                        <ArrowUpDown className="w-3.5 h-3.5 text-amber-400/40 hover:text-amber-400" />
                       )}
                     </span>
                   )}
@@ -69,7 +69,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-800/60 text-slate-200 font-semibold tracking-wide">
+        <tbody className="divide-y divide-amber-500/10 text-amber-100 font-semibold tracking-wide">
           {sortedData && sortedData.length > 0 ? (
             sortedData.map((row, rowIdx) => (
               <tr
@@ -79,8 +79,8 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
                   if (onRowClick) onRowClick(row);
                 }}
                 className={`transition-all duration-200 ${
-                  onRowClick ? 'cursor-pointer hover:bg-indigo-950/40 hover:border-l-4 hover:border-amber-400' : ''
-                } ${rowIdx % 2 === 0 ? 'bg-slate-900/60' : 'bg-slate-950/40'}`}
+                  onRowClick ? 'cursor-pointer hover:bg-amber-500/10 hover:border-l-4 hover:border-amber-400' : ''
+                } ${rowIdx % 2 === 0 ? 'bg-obsidian-900' : 'bg-obsidian-950/60'}`}
               >
                 {columns.map((col, colIdx) => (
                   <td key={colIdx} className={`py-4 px-5 ${col.className || ''}`}>
@@ -91,7 +91,7 @@ export default function Table({ columns, data, onRowClick, emptyMessage = "No ga
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="py-16 text-center text-slate-500 font-bold uppercase tracking-wider">
+              <td colSpan={columns.length} className="py-16 text-center text-amber-400/50 font-bold uppercase tracking-widest">
                 {emptyMessage}
               </td>
             </tr>
