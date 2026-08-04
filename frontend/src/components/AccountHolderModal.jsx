@@ -56,15 +56,15 @@ export default function AccountHolderModal({ isOpen, onClose, onSuccess, initial
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Account Holder" : "Add New Account Holder"}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-slate-900">
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-200">
+          <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Account Holder Name *
           </label>
           <input
@@ -72,12 +72,12 @@ export default function AccountHolderModal({ isOpen, onClose, onSuccess, initial
             placeholder="e.g. Main Corporate Account / Factory Reserve"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Current Balance (₹)
           </label>
           <input
@@ -86,22 +86,22 @@ export default function AccountHolderModal({ isOpen, onClose, onSuccess, initial
             placeholder="0.00"
             value={formData.current_balance}
             onChange={(e) => setFormData({ ...formData, current_balance: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
           />
         </div>
 
-        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+        <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 disabled:opacity-50 transition-colors"
+            className="px-5 py-2.5 rounded-xl text-sm font-extrabold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Saving...' : (initialData ? 'Update Account Holder' : 'Create Account Holder')}
           </button>

@@ -91,33 +91,33 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Sale Record">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-slate-900">
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-200">
+          <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200">
             {error}
           </div>
         )}
 
-        <div className="bg-brand-50 p-3 rounded-xl border border-brand-100 flex justify-between items-center text-xs text-brand-900 font-semibold">
+        <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 flex justify-between items-center text-xs text-blue-900 font-bold">
           <span>Available Stock: <strong>{availablePcs} PCS</strong></span>
-          <span>Sale Total: <strong className="text-sm font-extrabold text-brand-700">₹{calculatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+          <span>Sale Total: <strong className="text-sm font-extrabold text-blue-700">₹{calculatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Date *
             </label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Receipt / Invoice *
             </label>
             <input
@@ -125,13 +125,13 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder="e.g. REC-2026-101"
               value={formData.receipt}
               onChange={(e) => setFormData({ ...formData, receipt: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Sold To (Customer Name) *
           </label>
           <input
@@ -139,13 +139,13 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
             placeholder="e.g. Metro Fashion Hub"
             value={formData.sold_to}
             onChange={(e) => setFormData({ ...formData, sold_to: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Quantity (PCS) *
             </label>
             <input
@@ -155,12 +155,12 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder={`Max ${availablePcs}`}
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Unit Price (₹) *
             </label>
             <input
@@ -170,13 +170,13 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder="e.g. 450.00"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Receiver Option *
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -185,8 +185,8 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               onClick={() => setFormData({ ...formData, receiver: 'Saving' })}
               className={`py-2.5 px-4 rounded-xl text-xs font-extrabold border transition-all ${
                 formData.receiver === 'Saving'
-                  ? 'bg-brand-600 text-white border-brand-600 shadow-md shadow-brand-600/20'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
               }`}
             >
               Saving (Deposit to Account)
@@ -196,8 +196,8 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               onClick={() => setFormData({ ...formData, receiver: 'Expense' })}
               className={`py-2.5 px-4 rounded-xl text-xs font-extrabold border transition-all ${
                 formData.receiver === 'Expense'
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/20'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-md'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
               }`}
             >
               Expense (Factory Cost)
@@ -207,16 +207,16 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
 
         {formData.receiver === 'Saving' && (
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Account Holder *
             </label>
             <select
               value={formData.account_holder_id}
               onChange={(e) => setFormData({ ...formData, account_holder_id: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs"
             >
               {accountHolders.map(ah => (
-                <option key={ah.id} value={ah.id}>
+                <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
                   {ah.name} (Current: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
                 </option>
               ))}
@@ -226,7 +226,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
 
         {formData.receiver === 'Expense' && (
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Expense Description *
             </label>
             <input
@@ -234,23 +234,23 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder="e.g. Raw Material Cost / Labor & Thread Purchase"
               value={formData.expense_description}
               onChange={(e) => setFormData({ ...formData, expense_description: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
         )}
 
-        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+        <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-600/20 disabled:opacity-50 transition-colors"
+            className="px-5 py-2.5 rounded-xl text-sm font-extrabold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Processing Sale...' : 'Save & Confirm Sale'}
           </button>

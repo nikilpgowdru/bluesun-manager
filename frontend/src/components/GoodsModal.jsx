@@ -86,30 +86,30 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Production Goods" : "Add Production Goods"}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 text-slate-900">
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 text-xs font-semibold rounded-lg border border-red-200">
+          <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-lg border border-red-200">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Factory *
           </label>
           <select
             value={formData.factory_name}
             onChange={(e) => setFormData({ ...formData, factory_name: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs"
           >
-            <option value="Jeans">Jeans</option>
-            <option value="Shirts">Shirts</option>
-            <option value="Formals">Formals</option>
+            <option value="Jeans" className="text-slate-900 bg-white font-bold">Jeans</option>
+            <option value="Shirts" className="text-slate-900 bg-white font-bold">Shirts</option>
+            <option value="Formals" className="text-slate-900 bg-white font-bold">Formals</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Type *
           </label>
           <input
@@ -117,12 +117,12 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
             placeholder="e.g. Slim Fit Denim / Oxford Shirt"
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Brand Name *
           </label>
           <input
@@ -130,25 +130,25 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
             placeholder="e.g. Bluesun Urban / Bluesun Royal"
             value={formData.brand_name}
             onChange={(e) => setFormData({ ...formData, brand_name: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
             Manufacture Date *
           </label>
           <input
             type="date"
             value={formData.manufacture_date}
             onChange={(e) => setFormData({ ...formData, manufacture_date: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Total PCS *
             </label>
             <input
@@ -157,12 +157,12 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
               placeholder="e.g. 1000"
               value={formData.total_pcs}
               onChange={(e) => setFormData({ ...formData, total_pcs: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
               Rejected PCS
             </label>
             <input
@@ -171,23 +171,23 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
               placeholder="e.g. 25"
               value={formData.rejected_pcs}
               onChange={(e) => setFormData({ ...formData, rejected_pcs: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
         </div>
 
-        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+        <div className="pt-4 flex justify-end gap-3 border-t border-slate-200">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-100 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 disabled:opacity-50 transition-colors"
+            className="px-5 py-2.5 rounded-xl text-sm font-extrabold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-600/20 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Saving...' : (initialData ? 'Update Goods' : 'Save Production Goods')}
           </button>
