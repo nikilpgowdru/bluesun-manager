@@ -71,6 +71,13 @@ export default function AccountHolders() {
     }
   };
 
+  const handleAdjustSuccess = () => {
+    fetchAccountHolders();
+    if (selectedAccountHistory?.account_holder?.id) {
+      handleAccountClick(selectedAccountHistory.account_holder);
+    }
+  };
+
   const columns = [
     {
       header: 'Account Holder Name',
@@ -101,7 +108,7 @@ export default function AccountHolders() {
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => handleAdjust(e, row)}
-            className="px-3 py-1.5 text-xs font-extrabold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl border border-blue-200 transition-all flex items-center gap-1.5 shadow-xs"
+            className="px-3 py-1.5 text-xs font-extrabold bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
             title="Manually Add or Subtract Amount"
           >
             <ArrowUpDown className="w-3.5 h-3.5" />
@@ -142,7 +149,7 @@ export default function AccountHolders() {
             : 'bg-rose-50 text-rose-700 border border-rose-200'
         }`}>
           {row.type === 'Sale' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownLeft className="w-3 h-3" />}
-          {row.type === 'Sale' ? 'Deposit / Sale' : 'Withdrawal / Expense'}
+          {row.type === 'Sale' ? 'Deposit / Credit' : 'Withdrawal / Debit'}
         </span>
       ),
     },
@@ -192,7 +199,7 @@ export default function AccountHolders() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider font-heading">Account Holders Table</h3>
-              <p className="text-xs text-slate-600 font-semibold">Click any account holder row to inspect full transaction ledger history.</p>
+              <p className="text-xs text-slate-600 font-semibold">Click any row to inspect complete history, or click 'Adjust Balance (+/-)' to add/subtract funds.</p>
             </div>
             <span className="text-xs font-extrabold px-3 py-1 bg-slate-100 text-slate-700 rounded-lg border border-slate-200">
               {accountHolders.length} Active Accounts
@@ -224,16 +231,28 @@ export default function AccountHolders() {
           </div>
         ) : selectedAccountHistory ? (
           <div className="space-y-4 text-slate-900">
-            <div className="bg-blue-50/90 p-4 rounded-xl border border-blue-200 flex justify-between items-center">
+            <div className="bg-blue-50/90 p-4 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">Account Holder</span>
                 <h4 className="text-lg font-extrabold text-slate-900">{selectedAccountHistory.account_holder.name}</h4>
               </div>
-              <div className="text-right">
-                <span className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">Current Balance</span>
-                <h4 className="text-xl font-black text-emerald-700">
-                  ₹{selectedAccountHistory.account_holder.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </h4>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <span className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">Current Balance</span>
+                  <h4 className="text-xl font-black text-emerald-700">
+                    ₹{selectedAccountHistory.account_holder.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </h4>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedAccountToAdjust(selectedAccountHistory.account_holder);
+                    setIsAdjustModalOpen(true);
+                  }}
+                  className="px-3.5 py-2 text-xs font-extrabold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                >
+                  <ArrowUpDown className="w-4 h-4" />
+                  Adjust Balance (+/-)
+                </button>
               </div>
             </div>
 
@@ -270,7 +289,7 @@ export default function AccountHolders() {
           setSelectedAccountToAdjust(null);
         }}
         accountHolder={selectedAccountToAdjust}
-        onSuccess={fetchAccountHolders}
+        onSuccess={handleAdjustSuccess}
       />
     </Layout>
   );
