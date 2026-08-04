@@ -19,6 +19,7 @@ export const createSale = (goodsId, data) => api.post(`/goods/${goodsId}/sales`,
 export const getTransactions = (filterType, month) => api.get('/transactions', { params: { filter_type: filterType, month } });
 export const getAccountHolders = () => api.get('/account-holders');
 export const createAccountHolder = (data) => api.post('/account-holders', data);
+export const adjustAccountHolderBalance = (id, data) => api.post(`/account-holders/${id}/adjust`, data);
 export const getAccountHistory = (id) => api.get(`/account-holders/${id}/history`);
 export const getExpenses = (factory, month) => api.get('/expenses', { params: { factory, month } });
 export const createExpense = (data) => api.post('/expenses', data);

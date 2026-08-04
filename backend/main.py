@@ -131,6 +131,14 @@ def get_account_history(
 ):
     return crud.get_account_history(db, account_holder_id)
 
+@app.post("/api/account-holders/{account_holder_id}/adjust", response_model=schemas.AccountHolderOut)
+def adjust_account_holder_balance(
+    account_holder_id: int,
+    adjust_in: schemas.AccountHolderAdjust,
+    db: Session = Depends(database.get_db)
+):
+    return crud.adjust_account_holder_balance(db, account_holder_id, adjust_in)
+
 # 6. Expenses
 @app.get("/api/expenses", response_model=List[schemas.ExpenseOut])
 def get_expenses(

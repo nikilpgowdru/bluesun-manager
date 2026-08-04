@@ -222,6 +222,37 @@ def create_account_holder(db: Session, ah_in: schemas.AccountHolderCreate):
     db.refresh(ah)
     return ah
 
+def adjust_account_holder_balance(db: Session, account_holder_id: int, adjust_in: schemas.AccountHolderAdjust):
+    import datetime
+    ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == account_holder_id).first()
+    if not ah:
+        raise HTTPException(status_code=404, detail="Account Holder not found")
+    
+    amount = round(adjust_in.amount, 2)
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    
+    if adjust_in.action == "Deposit":
+        ah.current_balance += amount
+        tx_type = "Sale"
+        tx_desc = f"Manual Deposit: {adjust_in.description} (+₹{amount})"
+    else: # Withdraw
+        ah.current_balance -= amount
+        tx_type = "Expense"
+        tx_desc = f"Manual Withdrawal: {adjust_in.description} (-₹{amount})"
+    
+    tx = models.Transaction(
+        date=today_str,
+        type=tx_type,
+        description=tx_desc,
+        amount=amount,
+        factory_name="Jeans",
+        account_holder_id=ah.id
+    )
+    db.add(tx)
+    db.commit()
+    db.refresh(ah)
+    return ah
+
 def get_account_history(db: Session, account_holder_id: int):
     ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == account_holder_id).first()
     if not ah:

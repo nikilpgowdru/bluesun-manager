@@ -85,6 +85,17 @@ class AccountHolderCreate(BaseModel):
     name: str
     current_balance: float = 0.0
 
+class AccountHolderAdjust(BaseModel):
+    action: str # "Deposit" or "Withdraw"
+    amount: float = Field(..., gt=0)
+    description: str
+
+    @field_validator('action')
+    def validate_action(cls, v):
+        if v not in ['Deposit', 'Withdraw']:
+            raise ValueError('Action must be Deposit or Withdraw')
+        return v
+
 class AccountHolderOut(BaseModel):
     id: int
     name: str
