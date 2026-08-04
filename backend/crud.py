@@ -70,6 +70,8 @@ def get_goods_detail(db: Session, goods_id: int):
             sold_to=s.sold_to,
             quantity=s.quantity,
             price=s.price,
+            gst_percent=getattr(s, 'gst_percent', 0.0) or 0.0,
+            gst_amount=getattr(s, 'gst_amount', 0.0) or 0.0,
             total_amount=s.total_amount,
             receipt=s.receipt,
             receiver=s.receiver,
@@ -92,7 +94,14 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
             detail=f"Requested quantity ({sale_in.quantity}) exceeds available stock ({goods.available_pcs})"
         )
 
-    total_amount = round(sale_in.quantity * sale_in.price, 2)
+    subtotal = round(sale_in.quantity * sale_in.price, 2)
+    gst_pct = sale_in.gst_percent or 0.0
+    if sale_in.gst_amount is not None and sale_in.gst_amount > 0:
+        gst_amt = round(sale_in.gst_amount, 2)
+    else:
+        gst_amt = round(subtotal * (gst_pct / 100.0), 2)
+
+    total_amount = round(subtotal + gst_amt, 2)
     
     # 1. Update Goods
     goods.sold_pcs += sale_in.quantity
@@ -105,6 +114,8 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
         sold_to=sale_in.sold_to,
         quantity=sale_in.quantity,
         price=sale_in.price,
+        gst_percent=gst_pct,
+        gst_amount=gst_amt,
         total_amount=total_amount,
         receipt=sale_in.receipt,
         receiver=sale_in.receiver,

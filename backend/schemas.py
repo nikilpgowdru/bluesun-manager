@@ -49,6 +49,8 @@ class SaleCreate(BaseModel):
     sold_to: str
     quantity: int = Field(..., ge=1)
     price: float = Field(..., gt=0) # Unit price
+    gst_percent: Optional[float] = 0.0
+    gst_amount: Optional[float] = 0.0
     receipt: str
     receiver: str # "Expense" or "Saving"
     account_holder_id: Optional[int] = None
@@ -67,6 +69,8 @@ class SaleOut(BaseModel):
     sold_to: str
     quantity: int
     price: float
+    gst_percent: float = 0.0
+    gst_amount: float = 0.0
     total_amount: float
     receipt: str
     receiver: str
@@ -186,6 +190,8 @@ class SaleUpdate(BaseModel):
     sold_to: Optional[str] = None
     quantity: Optional[int] = Field(None, ge=1)
     price: Optional[float] = Field(None, gt=0)
+    gst_percent: Optional[float] = None
+    gst_amount: Optional[float] = None
     receipt: Optional[str] = None
     receiver: Optional[str] = None
     account_holder_id: Optional[int] = None

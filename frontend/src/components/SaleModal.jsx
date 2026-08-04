@@ -14,6 +14,9 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
     account_holder_id: '',
     expense_description: '',
   });
+
+  const [gstOption, setGstOption] = useState('none'); // 'none', '5', '12', '18', '28', 'custom'
+  const [customGstAmount, setCustomGstAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +37,20 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
       console.error('Error fetching account holders:', err);
     }
   };
+
+  const subtotal = (parseInt(formData.quantity) || 0) * (parseFloat(formData.price) || 0);
+
+  let gstPercent = 0;
+  let gstAmount = 0;
+
+  if (gstOption === 'custom') {
+    gstAmount = parseFloat(customGstAmount) || 0;
+  } else if (gstOption !== 'none') {
+    gstPercent = parseFloat(gstOption) || 0;
+    gstAmount = (subtotal * gstPercent) / 100;
+  }
+
+  const finalTotal = subtotal + gstAmount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,6 +92,8 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
         ...formData,
         quantity: qty,
         price: priceVal,
+        gst_percent: gstPercent,
+        gst_amount: gstAmount,
         account_holder_id: formData.receiver === 'Saving' ? parseInt(formData.account_holder_id) : null,
         expense_description: formData.receiver === 'Expense' ? formData.expense_description : null,
       });
@@ -87,8 +106,6 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
     }
   };
 
-  const calculatedTotal = (parseInt(formData.quantity) || 0) * (parseFloat(formData.price) || 0);
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Sale Record">
       <form onSubmit={handleSubmit} className="space-y-4 text-slate-900">
@@ -98,9 +115,20 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
           </div>
         )}
 
-        <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 flex justify-between items-center text-xs text-blue-900 font-bold">
-          <span>Available Stock: <strong>{availablePcs} PCS</strong></span>
-          <span>Sale Total: <strong className="text-sm font-extrabold text-blue-700">₹{calculatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+        {/* Financial Summary Banner */}
+        <div className="bg-blue-50/90 p-4 rounded-xl border border-blue-200 text-xs text-blue-900 font-bold space-y-1.5">
+          <div className="flex justify-between items-center text-slate-700">
+            <span>Stock Available: <strong>{availablePcs} PCS</strong></span>
+            <span>Subtotal: <strong>₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong></span>
+          </div>
+          <div className="flex justify-between items-center text-slate-700 border-t border-blue-200/60 pt-1.5">
+            <span>GST ({gstOption === 'custom' ? 'Custom ₹' : `${gstPercent}%`}):</span>
+            <span className="font-extrabold text-amber-700">+₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm pt-1.5 border-t border-blue-300">
+            <span className="font-extrabold text-slate-900">Final Total Earnings:</span>
+            <strong className="text-base font-black text-blue-700">₹{finalTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -112,7 +140,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
             />
           </div>
 
@@ -125,7 +153,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder="e.g. REC-2026-101"
               value={formData.receipt}
               onChange={(e) => setFormData({ ...formData, receipt: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
         </div>
@@ -139,7 +167,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
             placeholder="e.g. Metro Fashion Hub"
             value={formData.sold_to}
             onChange={(e) => setFormData({ ...formData, sold_to: e.target.value })}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs placeholder:text-slate-400"
           />
         </div>
 
@@ -155,7 +183,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder={`Max ${availablePcs}`}
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
 
@@ -170,9 +198,56 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder="e.g. 450.00"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
+        </div>
+
+        {/* GST Option Section */}
+        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+            GST Tax Option (Optional / Direct Cost)
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'none', label: 'No GST (0%)' },
+              { id: '5', label: 'GST 5%' },
+              { id: '12', label: 'GST 12%' },
+              { id: '18', label: 'GST 18%' },
+              { id: '28', label: 'GST 28%' },
+              { id: 'custom', label: 'Custom GST ₹' },
+            ].map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setGstOption(opt.id)}
+                className={`py-2 px-2.5 rounded-xl text-xs font-extrabold border transition-all ${
+                  gstOption === opt.id
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {gstOption === 'custom' && (
+            <div className="pt-2">
+              <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                Enter Direct GST Amount (₹) *
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="e.g. 500.00"
+                value={customGstAmount}
+                onChange={(e) => setCustomGstAmount(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+              />
+            </div>
+          )}
         </div>
 
         <div>
@@ -213,7 +288,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
             <select
               value={formData.account_holder_id}
               onChange={(e) => setFormData({ ...formData, account_holder_id: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
             >
               {accountHolders.map(ah => (
                 <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
@@ -234,7 +309,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               placeholder="e.g. Raw Material Cost / Labor & Thread Purchase"
               value={formData.expense_description}
               onChange={(e) => setFormData({ ...formData, expense_description: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 shadow-xs placeholder:text-slate-400"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs placeholder:text-slate-400"
             />
           </div>
         )}

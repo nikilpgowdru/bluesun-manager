@@ -52,7 +52,9 @@ class Sale(Base):
     sold_to = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False) # Unit price
-    total_amount = Column(Float, nullable=False) # quantity * price
+    total_amount = Column(Float, nullable=False) # (quantity * price) + gst_amount
+    gst_percent = Column(Float, nullable=False, default=0.0) # GST % e.g. 0, 5, 12, 18, 28
+    gst_amount = Column(Float, nullable=False, default=0.0) # GST Cost ₹
     receipt = Column(String, nullable=False)
     receiver = Column(String, nullable=False) # "Expense" or "Saving"
     account_holder_id = Column(Integer, ForeignKey("account_holders.id"), nullable=True)
