@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import Table from '../components/Table';
 import { getDashboardStats } from '../api';
-import { Package, DollarSign, TrendingDown, TrendingUp, Bell, Calendar, Sparkles } from 'lucide-react';
+import { Package, DollarSign, TrendingDown, TrendingUp, Bell, Calendar, Factory } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -31,13 +31,13 @@ export default function Dashboard() {
   const getFactoryBadge = (factoryName) => {
     switch (factoryName) {
       case 'Jeans':
-        return <span className="px-3 py-1 text-xs font-bold rounded-xl bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">👖 Jeans Line</span>;
+        return <span className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">👖 Jeans Line</span>;
       case 'Shirts':
-        return <span className="px-3 py-1 text-xs font-bold rounded-xl bg-teal-500/15 text-teal-300 border border-teal-500/30">👔 Shirts Line</span>;
+        return <span className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-teal-50 text-teal-700 border border-teal-200">👔 Shirts Line</span>;
       case 'Formals':
-        return <span className="px-3 py-1 text-xs font-bold rounded-xl bg-purple-500/15 text-purple-300 border border-purple-500/30">🧥 Formals Line</span>;
+        return <span className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-purple-50 text-purple-700 border border-purple-200">🧥 Formals Line</span>;
       default:
-        return <span className="px-3 py-1 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 border border-slate-700">{factoryName}</span>;
+        return <span className="px-2.5 py-1 text-xs font-extrabold rounded-lg bg-slate-100 text-slate-800 border border-slate-200">{factoryName}</span>;
     }
   };
 
@@ -51,8 +51,8 @@ export default function Dashboard() {
       header: 'Available Stock',
       accessor: 'available_stock',
       render: (row) => (
-        <span className="font-extrabold text-white text-sm">
-          {row.available_stock.toLocaleString()} <span className="text-xs text-indigo-400 font-semibold">PCS</span>
+        <span className="font-extrabold text-slate-900 text-sm">
+          {row.available_stock.toLocaleString()} <span className="text-xs text-slate-500 font-bold">PCS</span>
         </span>
       ),
     },
@@ -60,16 +60,16 @@ export default function Dashboard() {
       header: 'Gross Sales',
       accessor: 'sales',
       render: (row) => (
-        <span className="font-bold text-emerald-400 text-sm">
+        <span className="font-bold text-emerald-600 text-sm">
           ₹{row.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
     },
     {
-      header: 'Line Expenses',
+      header: 'Expenses',
       accessor: 'expenses',
       render: (row) => (
-        <span className="font-bold text-amber-400 text-sm">
+        <span className="font-bold text-amber-600 text-sm">
           ₹{row.expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
@@ -78,7 +78,7 @@ export default function Dashboard() {
       header: 'Net Profit',
       accessor: 'profit',
       render: (row) => (
-        <span className={`font-black text-sm ${row.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <span className={`font-extrabold text-sm ${row.profit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
           ₹{row.profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
         </span>
       ),
@@ -89,28 +89,28 @@ export default function Dashboard() {
     { 
       header: 'Garment Type', 
       accessor: 'type',
-      render: (row) => <span className="font-bold text-slate-200">{row.type}</span>
+      render: (row) => <span className="font-extrabold text-slate-900">{row.type}</span>
     },
     {
       header: 'Brand Name',
       accessor: 'brand_name',
-      render: (row) => (
-        <span className="font-extrabold text-white flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> {row.brand_name}
-        </span>
-      )
+      render: (row) => <span className="font-extrabold text-slate-900">{row.brand_name}</span>
     },
     {
       header: 'Factory Line',
       accessor: 'factory_name',
       render: (row) => getFactoryBadge(row.factory_name)
     },
-    { header: 'Manufacture Date', accessor: 'manufacture_date' },
+    { 
+      header: 'Manufacture Date', 
+      accessor: 'manufacture_date',
+      render: (row) => <span className="font-semibold text-slate-700">{row.manufacture_date}</span>
+    },
     {
       header: 'Available Inventory',
       accessor: 'available_pcs',
       render: (row) => (
-        <span className="font-extrabold text-indigo-300 bg-indigo-500/15 px-3 py-1 rounded-xl border border-indigo-500/30">{row.available_pcs} PCS</span>
+        <span className="font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">{row.available_pcs} PCS</span>
       )
     },
   ];
@@ -118,33 +118,33 @@ export default function Dashboard() {
   const months = ['All', '2026-08', '2026-07', '2026-06', '2026-05'];
 
   return (
-    <Layout pageTitle="Dashboard Overview">
+    <Layout pageTitle="Executive Dashboard">
       {/* Month Selector Bar */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pro-card p-5 rounded-2xl">
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
-          <h2 className="text-lg font-black text-white uppercase tracking-wider font-heading flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-indigo-400" /> Executive Analytics
+          <h2 className="text-lg font-extrabold text-slate-900 uppercase tracking-wider font-heading">
+            Executive Summary
           </h2>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Real-time apparel inventory & financial performance across Jeans, Shirts, and Formals.</p>
+          <p className="text-xs text-slate-600 font-semibold mt-0.5">Real-time apparel inventory & financial performance across Jeans, Shirts, and Formals.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Month:</span>
+          <Calendar className="w-4 h-4 text-slate-500" />
+          <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Month:</span>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 rounded-xl border border-slate-800 bg-slate-950 font-bold text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
           >
             {months.map(m => (
-              <option key={m} value={m}>{m === 'All' ? 'All Months' : m}</option>
+              <option key={m} value={m} className="text-slate-900 font-bold bg-white">{m === 'All' ? 'All Months' : m}</option>
             ))}
           </select>
         </div>
       </div>
 
       {loading ? (
-        <div className="py-24 text-center text-indigo-400 font-bold tracking-wider animate-pulse">
-          Loading Analytics...
+        <div className="py-20 text-center text-slate-500 font-extrabold tracking-wider animate-pulse">
+          Loading Executive Analytics...
         </div>
       ) : stats ? (
         <div className="space-y-6">
@@ -169,7 +169,7 @@ export default function Dashboard() {
               title="Total Expenses"
               value={`₹${stats.total_expenses.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
               icon={TrendingDown}
-              subtitle="Fabrics, Tailoring & Production"
+              subtitle="Fabrics & Production Costs"
               color="amber"
             />
             <StatCard
@@ -178,20 +178,20 @@ export default function Dashboard() {
               icon={TrendingUp}
               trend={stats.net_profit >= 0 ? "+Net Gain" : "-Deficit"}
               subtitle="Sales Minus Expenses"
-              color="purple"
+              color="blue"
             />
           </div>
 
           {/* Main Grid: Factory Summary & Notifications */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Factory Summary Table (2 cols) */}
-            <div className="lg:col-span-2 pro-card rounded-2xl p-6 space-y-4">
+            <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white uppercase tracking-wider font-heading">Factory Performance</h3>
-                  <p className="text-xs text-slate-400">Live inventory & profit metrics per apparel line.</p>
+                  <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider font-heading">Factory Performance</h3>
+                  <p className="text-xs text-slate-600 font-semibold">Live inventory & profit metrics per apparel line.</p>
                 </div>
-                <span className="text-xs font-bold px-3 py-1 bg-indigo-500/10 text-indigo-300 rounded-full border border-indigo-500/20 uppercase tracking-wider">3 Apparel Lines</span>
+                <span className="text-xs font-extrabold px-3 py-1 bg-slate-100 text-slate-700 rounded-lg border border-slate-200 uppercase tracking-wider">3 Apparel Lines</span>
               </div>
               <Table
                 columns={factoryColumns}
@@ -200,28 +200,34 @@ export default function Dashboard() {
             </div>
 
             {/* Notifications Box (1 col) */}
-            <div className="pro-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200">
                     <Bell className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white uppercase tracking-wider font-heading">System Alerts</h3>
-                    <p className="text-xs text-slate-400 font-semibold">Live ERP Alerts</p>
+                    <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider font-heading">System Alerts</h3>
+                    <p className="text-xs text-slate-600 font-semibold">Live ERP Alerts</p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   {stats.notifications.map(n => (
                     <div
                       key={n.id}
-                      className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 text-slate-200 text-xs shadow-inner"
+                      className={`p-4 rounded-xl border text-xs ${
+                        n.type === 'warning'
+                          ? 'bg-amber-50/90 border-amber-200 text-amber-900'
+                          : n.type === 'success'
+                          ? 'bg-emerald-50/90 border-emerald-200 text-emerald-900'
+                          : 'bg-blue-50/90 border-blue-200 text-blue-900'
+                      }`}
                     >
-                      <div className="font-bold flex items-center justify-between mb-1.5 text-indigo-300">
+                      <div className="font-extrabold flex items-center justify-between mb-1 text-slate-900">
                         <span>{n.title}</span>
                         <span className="text-[10px] opacity-75 font-mono">{n.date}</span>
                       </div>
-                      <p className="opacity-90 leading-relaxed">{n.message}</p>
+                      <p className="opacity-90 leading-relaxed font-semibold text-slate-800">{n.message}</p>
                     </div>
                   ))}
                 </div>
@@ -230,15 +236,15 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Manufactured Batches */}
-          <div className="pro-card rounded-2xl p-6 space-y-4">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white uppercase tracking-wider font-heading">Recent Production Lots</h3>
-                <p className="text-xs text-slate-400 font-semibold">Latest manufactured batches across Jeans, Shirts, and Formals.</p>
+                <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider font-heading">Recent Production Lots</h3>
+                <p className="text-xs text-slate-600 font-semibold">Latest manufactured batches across Jeans, Shirts, and Formals.</p>
               </div>
               <button
                 onClick={() => navigate('/goods')}
-                className="text-xs font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider hover:underline"
+                className="text-xs font-extrabold text-blue-600 hover:text-blue-800 uppercase tracking-wider hover:underline"
               >
                 View Inventory &rarr;
               </button>
