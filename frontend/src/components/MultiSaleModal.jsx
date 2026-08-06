@@ -19,9 +19,9 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
   const [reduceExistingBalance, setReduceExistingBalance] = useState(false);
   const [reduceAmountInput, setReduceAmountInput] = useState('');
 
-  // Selected Garment Items
+  // Selected Garment Items (Default to category_name: 'Shirts')
   const [items, setItems] = useState([
-    { goods_id: '', quantity: '', price: '' }
+    { category_name: 'Shirts', goods_id: '', quantity: '1', price: '' }
   ]);
 
   // Tax & Payment States
@@ -46,7 +46,7 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
       setSoldTo('');
       setReduceExistingBalance(false);
       setReduceAmountInput('');
-      setItems([{ goods_id: '', quantity: '', price: '' }]);
+      setItems([{ category_name: 'Shirts', goods_id: '', quantity: '1', price: '' }]);
       setGstOption('none');
       setCustomGstAmount('');
       setPaymentStatus('Paid');
@@ -64,21 +64,23 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
         getAccountHolders(),
         getPendingBalances()
       ]);
-      const availableGoods = goodsRes.data.filter(g => g.available_pcs > 0);
-      setGoodsList(availableGoods);
+      setGoodsList(goodsRes.data);
       setAccountHolders(ahRes.data);
       setPendingBalances(pendingRes.data);
       if (ahRes.data.length > 0) {
         setAccountHolderId(ahRes.data[0].id);
-      }
-      if (availableGoods.length > 0) {
-        setItems([{ goods_id: availableGoods[0].id.toString(), quantity: '1', price: '' }]);
       }
     } catch (err) {
       console.error('Error fetching initial data:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCategoryAvailableStock = (catName) => {
+    return goodsList
+      .filter(g => g.factory_name.toLowerCase() === catName.toLowerCase())
+      .reduce((sum, g) => sum + (g.available_pcs || 0), 0);
   };
 
   // Compute existing pending balance for typed customer name
@@ -93,8 +95,7 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
   const existingCustomerDue = getExistingCustomerDue();
 
   const handleAddItem = () => {
-    const firstAvailable = goodsList.length > 0 ? goodsList[0].id.toString() : '';
-    setItems([...items, { goods_id: firstAvailable, quantity: '1', price: '' }]);
+    setItems([...items, { category_name: 'Shirts', goods_id: '', quantity: '1', price: '' }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -164,19 +165,16 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
     }
 
     if (items.length === 0) {
-      setError('Please add at least 1 garment item.');
+      setError('Please add at least 1 garment line.');
       return;
     }
 
     const itemPayloads = [];
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      if (!it.goods_id) {
-        setError(`Please select a garment batch for Item #${i + 1}.`);
-        return;
-      }
       const q = parseInt(it.quantity);
       const p = parseFloat(it.price);
+
       if (isNaN(q) || q <= 0) {
         setError(`Quantity for Item #${i + 1} must be greater than 0.`);
         return;
@@ -186,17 +184,30 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      const selectedGoods = goodsList.find(g => g.id.toString() === it.goods_id.toString());
-      if (selectedGoods && q > selectedGoods.available_pcs) {
-        setError(`Quantity (${q}) for ${selectedGoods.brand_name} exceeds stock (${selectedGoods.available_pcs} PCS).`);
-        return;
+      if (it.goods_id) {
+        const selectedGoods = goodsList.find(g => g.id.toString() === it.goods_id.toString());
+        if (selectedGoods && q > selectedGoods.available_pcs) {
+          setError(`Quantity (${q}) for ${selectedGoods.brand_name} exceeds stock (${selectedGoods.available_pcs} PCS).`);
+          return;
+        }
+        itemPayloads.push({
+          goods_id: parseInt(it.goods_id),
+          quantity: q,
+          price: p
+        });
+      } else {
+        const catName = it.category_name || 'Shirts';
+        const availCatStock = getCategoryAvailableStock(catName);
+        if (q > availCatStock) {
+          setError(`Quantity (${q} PCS) for ${catName} exceeds available stock (${availCatStock} PCS).`);
+          return;
+        }
+        itemPayloads.push({
+          category_name: catName,
+          quantity: q,
+          price: p
+        });
       }
-
-      itemPayloads.push({
-        goods_id: parseInt(it.goods_id),
-        quantity: q,
-        price: p
-      });
     }
 
     if (receiver === 'Saving' && !accountHolderId) {
@@ -388,7 +399,7 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
               <ShoppingBag className="w-4 h-4 text-blue-600" />
-              Select Garment Batches & Quantities
+              Select Garments & Quantities (Auto Deducts Stock)
             </span>
             <button
               type="button"
@@ -401,52 +412,85 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           {items.map((item, idx) => {
-            const currentGoods = goodsList.find(g => g.id.toString() === item.goods_id.toString());
+            const activeCat = item.category_name || 'Shirts';
+            const catStock = getCategoryAvailableStock(activeCat);
             return (
-              <div key={idx} className="p-3 bg-white border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-xs font-extrabold text-slate-800">
-                  <span>Item #{idx + 1}</span>
+              <div key={idx} className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 border-b border-slate-100 pb-2">
+                  <span className="flex items-center gap-1.5">
+                    Item #{idx + 1}: <strong className="text-blue-600">{activeCat}</strong>
+                  </span>
                   {items.length > 1 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(idx)}
-                      className="text-rose-500 hover:text-rose-700 p-0.5 rounded"
+                      className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 text-xs flex items-center gap-1 font-bold"
                       title="Remove Item"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
+                      Remove
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-0.5">Garment Batch / Stock *</label>
-                    <select
-                      value={item.goods_id}
-                      onChange={(e) => handleItemChange(idx, 'goods_id', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-900 font-bold text-xs bg-white"
-                    >
-                      <option value="">Select Garment Stock</option>
-                      {goodsList.map(g => (
-                        <option key={g.id} value={g.id}>
-                          [{g.factory_name}] {g.brand_name} ({g.type}) - Batch: {g.batch_number} (Avail: {g.available_pcs} PCS)
-                        </option>
-                      ))}
-                    </select>
+
+                {/* 3 Simple Category Option Buttons */}
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1.5">
+                    1. Select Garment Type *
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { name: 'Shirts', label: '👔 Shirts', color: 'teal' },
+                      { name: 'Jeans', label: '👖 Jeans', color: 'indigo' },
+                      { name: 'Formals', label: '🧥 Formals', color: 'purple' },
+                    ].map(cat => {
+                      const isSel = activeCat.toLowerCase() === cat.name.toLowerCase();
+                      const avail = getCategoryAvailableStock(cat.name);
+                      return (
+                        <button
+                          key={cat.name}
+                          type="button"
+                          onClick={() => {
+                            const newItems = [...items];
+                            newItems[idx].category_name = cat.name;
+                            newItems[idx].goods_id = '';
+                            setItems(newItems);
+                          }}
+                          className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col items-center justify-center gap-0.5 border transition-all ${
+                            isSel
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-blue-500'
+                              : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span className="text-sm font-black">{cat.label}</span>
+                          <span className={`text-[10px] font-bold ${isSel ? 'text-amber-300' : 'text-slate-500'}`}>
+                            Avail: {avail} PCS
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-0.5">Quantity (PCS) *</label>
+                    <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
+                      2. Quantity (PCS) * <span className="text-slate-400 font-semibold">(Max: {catStock} PCS)</span>
+                    </label>
                     <input
                       type="number"
                       min="1"
-                      max={currentGoods ? currentGoods.available_pcs : 99999}
+                      max={catStock > 0 ? catStock : 99999}
                       placeholder="e.g. 10"
                       value={item.quantity}
                       onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-900 font-bold text-xs bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-extrabold text-slate-600 uppercase mb-0.5">Unit Price (₹) *</label>
+                    <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
+                      3. Unit Price (₹) *
+                    </label>
                     <input
                       type="number"
                       step="0.01"
@@ -454,7 +498,7 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
                       placeholder="e.g. 450"
                       value={item.price}
                       onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-900 font-bold text-xs bg-white"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>

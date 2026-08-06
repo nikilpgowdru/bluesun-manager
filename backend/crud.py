@@ -315,43 +315,67 @@ def create_multi_item_sale(db: Session, multi_in: schemas.MultiSaleCreate):
         
     item_descriptions = []
     for item in multi_in.items:
-        goods = db.query(models.Goods).filter(models.Goods.id == item.goods_id).first()
-        if not goods:
-            raise HTTPException(status_code=404, detail=f"Goods item ID {item.goods_id} not found")
-        if item.quantity > goods.available_pcs:
-            raise HTTPException(status_code=400, detail=f"Stock insufficient for {goods.brand_name} ({goods.type}). Requested {item.quantity}, available {goods.available_pcs}.")
-            
-        item_subtotal = item.quantity * item.price
-        item_gst = (item_subtotal / items_subtotal) * total_gst if items_subtotal > 0 else 0.0
-        item_total = item_subtotal + item_gst
-        item_paid = (item_subtotal / items_subtotal) * p_amount if items_subtotal > 0 else 0.0
-        item_due = item_total - item_paid
-        
-        goods.sold_pcs += item.quantity
-        goods.total_earnings += item_total
-        
-        sale = models.Sale(
-            goods_id=goods.id,
-            batch_number=goods.batch_number or "BATCH-DEFAULT",
-            date=multi_in.date,
-            sold_to=multi_in.sold_to,
-            quantity=item.quantity,
-            price=item.price,
-            gst_percent=gst_pct,
-            gst_amount=round(item_gst, 2),
-            total_amount=round(item_total, 2),
-            payment_status=p_status,
-            paid_amount=round(item_paid, 2),
-            balance_due=round(item_due, 2),
-            receipt=multi_in.receipt,
-            receiver=multi_in.receiver,
-            account_holder_id=multi_in.account_holder_id if multi_in.receiver == "Saving" else None,
-            expense_description=multi_in.expense_description if multi_in.receiver == "Expense" else None
-        )
-        db.add(sale)
-        db.flush()
-        created_sales.append(sale)
-        item_descriptions.append(f"{goods.brand_name} ({goods.factory_name}) x {item.quantity} pcs")
+        if item.goods_id:
+            goods = db.query(models.Goods).filter(models.Goods.id == item.goods_id).first()
+            if not goods:
+                raise HTTPException(status_code=404, detail=f"Goods item ID {item.goods_id} not found")
+            if item.quantity > goods.available_pcs:
+                raise HTTPException(status_code=400, detail=f"Stock insufficient for {goods.brand_name} ({goods.type}). Requested {item.quantity}, available {goods.available_pcs}.")
+            allocations = [(goods, item.quantity)]
+        else:
+            cat_name = item.category_name or "Jeans"
+            avail_goods = db.query(models.Goods).filter(
+                models.Goods.factory_name.ilike(cat_name)
+            ).order_by(models.Goods.manufacture_date.asc(), models.Goods.id.asc()).all()
+
+            total_avail = sum(g.available_pcs for g in avail_goods)
+            if item.quantity > total_avail:
+                raise HTTPException(status_code=400, detail=f"Insufficient total stock in {cat_name}. Requested {item.quantity} PCS, but total available stock in {cat_name} is {total_avail} PCS.")
+
+            allocations = []
+            rem = item.quantity
+            for g in avail_goods:
+                if rem <= 0:
+                    break
+                if g.available_pcs <= 0:
+                    continue
+                take = min(rem, g.available_pcs)
+                allocations.append((g, take))
+                rem -= take
+
+        for goods, alloc_qty in allocations:
+            ratio = alloc_qty / item.quantity if item.quantity > 0 else 1.0
+            item_subtotal = (alloc_qty * item.price)
+            item_gst = (item_subtotal / items_subtotal) * total_gst if items_subtotal > 0 else 0.0
+            item_total = item_subtotal + item_gst
+            item_paid = (item_subtotal / items_subtotal) * p_amount if items_subtotal > 0 else 0.0
+            item_due = item_total - item_paid
+
+            goods.sold_pcs += alloc_qty
+            goods.total_earnings += item_total
+
+            sale = models.Sale(
+                goods_id=goods.id,
+                batch_number=goods.batch_number or "BATCH-DEFAULT",
+                date=multi_in.date,
+                sold_to=multi_in.sold_to,
+                quantity=alloc_qty,
+                price=item.price,
+                gst_percent=gst_pct,
+                gst_amount=round(item_gst, 2),
+                total_amount=round(item_total, 2),
+                payment_status=p_status,
+                paid_amount=round(item_paid, 2),
+                balance_due=round(item_due, 2),
+                receipt=multi_in.receipt,
+                receiver=multi_in.receiver,
+                account_holder_id=multi_in.account_holder_id if multi_in.receiver == "Saving" else None,
+                expense_description=multi_in.expense_description if multi_in.receiver == "Expense" else None
+            )
+            db.add(sale)
+            db.flush()
+            created_sales.append(sale)
+            item_descriptions.append(f"{goods.brand_name} ({goods.factory_name}) x {alloc_qty} pcs")
 
     tx_status = f" ({p_status})" if p_status != "Paid" else ""
     tx_desc = f"Multi-Sale ({', '.join(item_descriptions)}) to {multi_in.sold_to}{tx_status}"

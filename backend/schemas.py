@@ -75,7 +75,8 @@ class SaleCreate(BaseModel):
         return v
 
 class MultiSaleItemInput(BaseModel):
-    goods_id: int
+    category_name: Optional[str] = None
+    goods_id: Optional[int] = None
     quantity: int = Field(..., ge=1)
     price: float = Field(..., gt=0)
 
