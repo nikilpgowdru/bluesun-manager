@@ -354,6 +354,7 @@ def create_multi_item_sale(db: Session, multi_in: schemas.MultiSaleCreate):
             goods.sold_pcs += alloc_qty
             goods.total_earnings += item_total
 
+            desc_str = f" - {item.description.strip()}" if (item.description and item.description.strip()) else ""
             sale = models.Sale(
                 goods_id=goods.id,
                 batch_number=goods.batch_number or "BATCH-DEFAULT",
@@ -370,12 +371,12 @@ def create_multi_item_sale(db: Session, multi_in: schemas.MultiSaleCreate):
                 receipt=multi_in.receipt,
                 receiver=multi_in.receiver,
                 account_holder_id=multi_in.account_holder_id if multi_in.receiver == "Saving" else None,
-                expense_description=multi_in.expense_description if multi_in.receiver == "Expense" else None
+                expense_description=f"{item.description.strip()}" if (item.description and item.description.strip()) else (multi_in.expense_description if multi_in.receiver == "Expense" else None)
             )
             db.add(sale)
             db.flush()
             created_sales.append(sale)
-            item_descriptions.append(f"{goods.brand_name} ({goods.factory_name}) x {alloc_qty} pcs")
+            item_descriptions.append(f"{goods.brand_name} ({goods.factory_name}){desc_str} x {alloc_qty} pcs")
 
     tx_status = f" ({p_status})" if p_status != "Paid" else ""
     tx_desc = f"Multi-Sale ({', '.join(item_descriptions)}) to {multi_in.sold_to}{tx_status}"

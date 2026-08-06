@@ -418,7 +418,7 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
               <div key={idx} className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-3">
                 <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 border-b border-slate-100 pb-2">
                   <span className="flex items-center gap-1.5">
-                    Item #{idx + 1}: <strong className="text-blue-600">{activeCat}</strong>
+                    Item #{idx + 1}: <strong className="text-blue-600 font-black">{activeCat}</strong>
                   </span>
                   {items.length > 1 && (
                     <button
@@ -433,63 +433,37 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
                   )}
                 </div>
 
-                {/* 3 Simple Category Option Buttons */}
-                <div>
-                  <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1.5">
-                    1. Select Garment Type *
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { name: 'Shirts', label: '👔 Shirts', color: 'teal' },
-                      { name: 'Jeans', label: '👖 Jeans', color: 'indigo' },
-                      { name: 'Formals', label: '🧥 Formals', color: 'purple' },
-                    ].map(cat => {
-                      const isSel = activeCat.toLowerCase() === cat.name.toLowerCase();
-                      const avail = getCategoryAvailableStock(cat.name);
-                      return (
-                        <button
-                          key={cat.name}
-                          type="button"
-                          onClick={() => {
-                            const newItems = [...items];
-                            newItems[idx].category_name = cat.name;
-                            newItems[idx].goods_id = '';
-                            setItems(newItems);
-                          }}
-                          className={`py-2 px-2 rounded-xl text-xs font-extrabold flex flex-col items-center justify-center gap-0.5 border transition-all ${
-                            isSel
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-blue-500'
-                              : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
-                          }`}
-                        >
-                          <span className="text-sm font-black">{cat.label}</span>
-                          <span className={`text-[10px] font-bold ${isSel ? 'text-amber-300' : 'text-slate-500'}`}>
-                            Avail: {avail} PCS
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
-                      2. Quantity (PCS) * <span className="text-slate-400 font-semibold">(Max: {catStock} PCS)</span>
+                      Garment Stock *
+                    </label>
+                    <select
+                      value={activeCat}
+                      onChange={(e) => handleItemChange(idx, 'category_name', e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500 shadow-xs"
+                    >
+                      <option value="Shirts">Shirts (Avail: {getCategoryAvailableStock('Shirts')} PCS)</option>
+                      <option value="Formals">Formals (Avail: {getCategoryAvailableStock('Formals')} PCS)</option>
+                      <option value="Jeans">Jeans (Avail: {getCategoryAvailableStock('Jeans')} PCS)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
+                      Quantity (PCS) *
                     </label>
                     <input
                       type="number"
                       min="1"
-                      max={catStock > 0 ? catStock : 99999}
-                      placeholder="e.g. 10"
+                      placeholder="1"
                       value={item.quantity}
                       onChange={(e) => handleItemChange(idx, 'quantity', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500 shadow-xs"
                     />
                   </div>
                   <div>
                     <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
-                      3. Unit Price (₹) *
+                      Unit Price (₹) *
                     </label>
                     <input
                       type="number"
@@ -498,9 +472,23 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
                       placeholder="e.g. 450"
                       value={item.price}
                       onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-900 font-bold text-xs bg-white focus:ring-2 focus:ring-blue-500 shadow-xs"
                     />
                   </div>
+                </div>
+
+                {/* Below Description Field */}
+                <div>
+                  <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
+                    Description / Brand (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Mention brand or required details here (e.g. Rare rabbit, Levi's, CK, half sleeve...)"
+                    value={item.description || ''}
+                    onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-slate-900 font-medium text-xs bg-slate-50 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+                  />
                 </div>
               </div>
             );
