@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { getGoods, getAccountHolders, createAccountHolder, createMultiItemSale } from '../api';
-import { Plus, Trash2, UserPlus, Search, ShoppingBag } from 'lucide-react';
+import { getGoods, getAccountHolders, createAccountHolder, createMultiItemSale, getPendingBalances } from '../api';
+import { Plus, Trash2, UserPlus, Search, ShoppingBag, ShieldCheck, Scale, ArrowDownRight } from 'lucide-react';
 
 export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
   const [goodsList, setGoodsList] = useState([]);
   const [accountHolders, setAccountHolders] = useState([]);
+  const [pendingBalances, setPendingBalances] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -14,6 +15,10 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
   const [soldTo, setSoldTo] = useState('');
   const [receipt, setReceipt] = useState(`REC-${Date.now().toString().slice(-6)}`);
   
+  // Balance Reduction State for Existing Customer Dues
+  const [reduceExistingBalance, setReduceExistingBalance] = useState(false);
+  const [reduceAmountInput, setReduceAmountInput] = useState('');
+
   // Selected Garment Items
   const [items, setItems] = useState([
     { goods_id: '', quantity: '', price: '' }
@@ -39,6 +44,8 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
       setReceipt(`REC-${Date.now().toString().slice(-6)}`);
       setDate(new Date().toISOString().split('T')[0]);
       setSoldTo('');
+      setReduceExistingBalance(false);
+      setReduceAmountInput('');
       setItems([{ goods_id: '', quantity: '', price: '' }]);
       setGstOption('none');
       setCustomGstAmount('');
@@ -52,13 +59,15 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [goodsRes, ahRes] = await Promise.all([
+      const [goodsRes, ahRes, pendingRes] = await Promise.all([
         getGoods('All', 'All', 'All'),
-        getAccountHolders()
+        getAccountHolders(),
+        getPendingBalances()
       ]);
       const availableGoods = goodsRes.data.filter(g => g.available_pcs > 0);
       setGoodsList(availableGoods);
       setAccountHolders(ahRes.data);
+      setPendingBalances(pendingRes.data);
       if (ahRes.data.length > 0) {
         setAccountHolderId(ahRes.data[0].id);
       }
@@ -71,6 +80,17 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
       setLoading(false);
     }
   };
+
+  // Compute existing pending balance for typed customer name
+  const getExistingCustomerDue = () => {
+    if (!soldTo.trim()) return 0;
+    const name = soldTo.trim().toLowerCase();
+    return pendingBalances
+      .filter(b => b.sold_to.trim().toLowerCase() === name)
+      .reduce((sum, b) => sum + (b.balance_due || 0), 0);
+  };
+
+  const existingCustomerDue = getExistingCustomerDue();
 
   const handleAddItem = () => {
     const firstAvailable = goodsList.length > 0 ? goodsList[0].id.toString() : '';
@@ -189,6 +209,8 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    const reduceAmt = reduceExistingBalance ? (parseFloat(reduceAmountInput) || 0) : 0;
+
     try {
       setLoading(true);
       const payload = {
@@ -202,7 +224,8 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
         paid_amount: calculatedPaidAmount,
         receiver,
         account_holder_id: receiver === 'Saving' ? parseInt(accountHolderId) : null,
-        expense_description: receiver === 'Expense' ? expenseDesc.trim() : null
+        expense_description: receiver === 'Expense' ? expenseDesc.trim() : null,
+        reduce_existing_balance_amount: reduceAmt
       };
 
       await createMultiItemSale(payload);
@@ -269,6 +292,97 @@ export default function MultiSaleModal({ isOpen, onClose, onSuccess }) {
             />
           </div>
         </div>
+
+        {/* Existing Customer Balance Banner & Custom Reduction Section */}
+        {soldTo.trim() && existingCustomerDue > 0 && (
+          <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-amber-600" />
+                <span className="text-xs font-extrabold text-amber-900">
+                  Existing Outstanding Balance for <strong>{soldTo.trim()}</strong>:
+                </span>
+              </div>
+              <span className="text-sm font-black text-rose-600">
+                ₹{existingCustomerDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            <div className="pt-2 border-t border-amber-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-slate-900">
+                  Adjust Customer's Existing Balance During Checkout?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextState = !reduceExistingBalance;
+                    setReduceExistingBalance(nextState);
+                    if (nextState && !reduceAmountInput) {
+                      setReduceAmountInput(existingCustomerDue.toString());
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 border transition-all ${
+                    reduceExistingBalance
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  <ArrowDownRight className="w-3.5 h-3.5" />
+                  {reduceExistingBalance ? 'Balance Reduction Active' : 'Reduce Existing Balance'}
+                </button>
+              </div>
+
+              {reduceExistingBalance && (
+                <div className="p-3 bg-white rounded-xl border border-emerald-300 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
+                        Reduce Customer Balance By (₹) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max={existingCustomerDue}
+                        placeholder="Enter amount to pay off"
+                        value={reduceAmountInput}
+                        onChange={(e) => setReduceAmountInput(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-slate-900 font-bold text-xs bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-slate-700 uppercase mb-1">
+                        Remaining Customer Due After Checkout
+                      </label>
+                      <div className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-black text-xs">
+                        ₹{Math.max(0, existingCustomerDue - (parseFloat(reduceAmountInput) || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReduceAmountInput(existingCustomerDue.toString())}
+                      className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[11px] font-extrabold border"
+                    >
+                      Full Settle (₹{existingCustomerDue.toLocaleString('en-IN')})
+                    </button>
+                    {existingCustomerDue > 500 && (
+                      <button
+                        type="button"
+                        onClick={() => setReduceAmountInput((existingCustomerDue / 2).toFixed(2))}
+                        className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded text-[11px] font-extrabold border"
+                      >
+                        50% Partial (₹{(existingCustomerDue / 2).toLocaleString('en-IN')})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
           <div className="flex items-center justify-between">

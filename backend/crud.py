@@ -389,6 +389,17 @@ def create_multi_item_sale(db: Session, multi_in: schemas.MultiSaleCreate):
                 if ah:
                     ah.current_balance += p_amount
 
+    # Reduce customer's existing balance if requested during sale checkout
+    if multi_in.reduce_existing_balance_amount and multi_in.reduce_existing_balance_amount > 0:
+        try:
+            settle_customer_balance(db, schemas.SettleCustomerBalanceIn(
+                customer_name=multi_in.sold_to,
+                amount_paid=multi_in.reduce_existing_balance_amount,
+                account_holder_id=multi_in.account_holder_id if multi_in.receiver == "Saving" else None
+            ))
+        except Exception as err:
+            print("Safely handled auto balance reduction during multi-sale:", err)
+
     db.commit()
     return [schemas.SaleOut.model_validate(s) for s in created_sales]
 
@@ -1171,6 +1182,64 @@ def settle_sale_balance(db: Session, sale_id: int, settle_in: schemas.SettleBala
     db.commit()
     db.refresh(sale)
     return sale
+
+def settle_customer_balance(db: Session, settle_in: schemas.SettleCustomerBalanceIn):
+    from datetime import datetime
+    cust_name = settle_in.customer_name.strip()
+    if not cust_name:
+        raise HTTPException(status_code=400, detail="Customer name is required")
+    
+    pay_amt = round(settle_in.amount_paid, 2)
+    if pay_amt <= 0:
+        raise HTTPException(status_code=400, detail="Amount paid must be greater than 0")
+
+    pending_sales = db.query(models.Sale).filter(
+        models.Sale.sold_to.ilike(cust_name),
+        models.Sale.balance_due > 0
+    ).order_by(models.Sale.date.asc(), models.Sale.id.asc()).all()
+
+    if not pending_sales:
+        raise HTTPException(status_code=404, detail=f"No pending balance records found for customer '{cust_name}'")
+
+    remaining_to_pay = pay_amt
+    total_applied = 0.0
+
+    for sale in pending_sales:
+        if remaining_to_pay <= 0:
+            break
+        
+        due = getattr(sale, 'balance_due', 0.0) or 0.0
+        if due <= 0:
+            continue
+
+        deduct = min(remaining_to_pay, due)
+        sale.paid_amount = (getattr(sale, 'paid_amount', 0.0) or 0.0) + deduct
+        sale.balance_due = max(0.0, due - deduct)
+        
+        if sale.balance_due == 0:
+            sale.payment_status = "Paid"
+        else:
+            sale.payment_status = "Partial"
+
+        remaining_to_pay -= deduct
+        total_applied += deduct
+
+    if settle_in.account_holder_id and total_applied > 0:
+        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == settle_in.account_holder_id).first()
+        if ah:
+            ah.current_balance += total_applied
+            tx = models.Transaction(
+                date=datetime.now().strftime("%Y-%m-%d"),
+                type="Sale",
+                description=f"Customer Balance Collection from {cust_name} (+₹{total_applied:.2f})",
+                amount=total_applied,
+                factory_name="Jeans",
+                account_holder_id=ah.id
+            )
+            db.add(tx)
+
+    db.commit()
+    return {"message": f"Successfully collected ₹{total_applied:.2f} payment from {cust_name} and adjusted balances!"}
 
 # Chansandra Loan Payback Section
 def create_chansandra_entry(db: Session, entry_in: schemas.ChansandraEntryCreate):

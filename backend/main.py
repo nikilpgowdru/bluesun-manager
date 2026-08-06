@@ -200,12 +200,13 @@ def get_pending_balances(db: Session = Depends(database.get_db)):
     return crud.get_pending_balances(db)
 
 @app.post("/api/sales/{sale_id}/settle", response_model=schemas.SaleOut)
-def settle_sale_balance(
-    sale_id: int,
-    settle_in: schemas.SettleBalanceIn,
-    db: Session = Depends(database.get_db)
-):
+@app.post("/api/balances/settle/{sale_id}", response_model=schemas.SaleOut)
+def settle_sale_balance(sale_id: int, settle_in: schemas.SettleBalanceIn, db: Session = Depends(database.get_db)):
     return crud.settle_sale_balance(db, sale_id, settle_in)
+
+@app.post("/api/balances/settle-customer")
+def settle_customer_balance(settle_in: schemas.SettleCustomerBalanceIn, db: Session = Depends(database.get_db)):
+    return crud.settle_customer_balance(db, settle_in)
 
 # 9. Chansandra Section
 @app.get("/api/chansandra", response_model=schemas.ChansandraSummary)

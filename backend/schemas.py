@@ -92,6 +92,7 @@ class MultiSaleCreate(BaseModel):
     account_holder_id: Optional[int] = None
     account_allocations: Optional[List[AccountAllocation]] = None
     expense_description: Optional[str] = None
+    reduce_existing_balance_amount: Optional[float] = 0.0
 
 class SaleOut(BaseModel):
     id: int
