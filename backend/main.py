@@ -295,7 +295,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+frontend_dist = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(frontend_dist):
+    frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 
 @app.middleware("http")
 async def add_no_cache_headers(request, call_next):
