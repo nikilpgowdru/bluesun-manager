@@ -10,6 +10,7 @@ import { Plus, Calendar, Factory, Trash2, Edit3, Package, Tag, Shirt, Landmark, 
 export default function Goods() {
   const navigate = useNavigate();
   const [goods, setGoods] = useState([]);
+  const [allGoods, setAllGoods] = useState([]);
   const [factory, setFactory] = useState('All');
   const [month, setMonth] = useState('All');
   const [selectedBatch, setSelectedBatch] = useState('All');
@@ -24,8 +25,12 @@ export default function Goods() {
   const fetchGoods = async () => {
     try {
       setLoading(true);
-      const res = await getGoods(factory, month, selectedBatch);
-      setGoods(res.data);
+      const [filteredRes, allRes] = await Promise.all([
+        getGoods(factory, month, selectedBatch),
+        getGoods('All', 'All', 'All')
+      ]);
+      setGoods(filteredRes.data);
+      setAllGoods(allRes.data);
     } catch (err) {
       console.error('Error fetching goods:', err);
     } finally {
@@ -51,14 +56,14 @@ export default function Goods() {
     }
   };
 
-  // Compute live category statistics for Jeans, Shirts, Formals
+  // Compute live category statistics from ALL goods so metrics are never hidden by active filters
   const computeStats = () => {
     let jeansMfg = 0, jeansDef = 0, jeansAvail = 0;
     let shirtsMfg = 0, shirtsDef = 0, shirtsAvail = 0;
     let formalsMfg = 0, formalsDef = 0, formalsAvail = 0;
     let totalAvail = 0, totalDef = 0;
 
-    goods.forEach(g => {
+    allGoods.forEach(g => {
       totalAvail += g.available_pcs;
       totalDef += g.rejected_pcs;
 
@@ -88,8 +93,8 @@ export default function Goods() {
 
   const stats = computeStats();
 
-  // Extract unique batch numbers for filter
-  const uniqueBatches = Array.from(new Set(goods.map(g => g.batch_number).filter(Boolean)));
+  // Extract unique batch numbers from all goods
+  const uniqueBatches = Array.from(new Set(allGoods.map(g => g.batch_number).filter(Boolean)));
 
   const columns = [
     {
