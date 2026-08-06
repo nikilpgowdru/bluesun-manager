@@ -8,16 +8,16 @@ def goods_to_out(g: models.Goods) -> schemas.GoodsOut:
     return schemas.GoodsOut(
         id=g.id,
         batch_number=g.batch_number or "BATCH-DEFAULT",
-        factory_name=g.factory_name,
-        type=g.type,
-        brand_name=g.brand_name,
-        manufacture_date=g.manufacture_date,
-        total_pcs=g.total_pcs,
-        rejected_pcs=g.rejected_pcs,
+        factory_name=g.factory_name or "Jeans",
+        type=g.type or "",
+        brand_name=g.brand_name or "",
+        manufacture_date=g.manufacture_date or "",
+        total_pcs=g.total_pcs or 0,
+        rejected_pcs=g.rejected_pcs or 0,
         passed_pcs=g.passed_pcs,
         available_pcs=g.available_pcs,
-        sold_pcs=g.sold_pcs,
-        total_earnings=g.total_earnings
+        sold_pcs=g.sold_pcs or 0,
+        total_earnings=g.total_earnings or 0.0
     )
 
 # Business Units

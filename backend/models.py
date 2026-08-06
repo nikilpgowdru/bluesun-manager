@@ -27,11 +27,11 @@ class Goods(Base):
 
     @property
     def passed_pcs(self):
-        return self.total_pcs - self.rejected_pcs
+        return (self.total_pcs or 0) - (self.rejected_pcs or 0)
 
     @property
     def available_pcs(self):
-        return self.passed_pcs - self.sold_pcs
+        return self.passed_pcs - (self.sold_pcs or 0)
 
 class AccountHolder(Base):
     __tablename__ = "account_holders"
