@@ -178,10 +178,28 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
                 is_from_sale=True
             )
             db.add(expense)
-        elif sale_in.receiver == "Saving" and sale_in.account_holder_id:
-            account_holder = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale_in.account_holder_id).first()
-            if account_holder:
-                account_holder.current_balance += p_amount
+        elif sale_in.receiver == "Saving":
+            if sale_in.account_allocations and len(sale_in.account_allocations) > 0:
+                for alloc in sale_in.account_allocations:
+                    if alloc.amount > 0:
+                        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == alloc.account_holder_id).first()
+                        if ah:
+                            ah.current_balance += alloc.amount
+                            tx_desc = f"Sale Deposit ({ah.name}): {goods.brand_name} x {sale_in.quantity} pcs to {sale_in.sold_to}"
+                            db.add(models.Transaction(
+                                date=sale_in.date,
+                                type="Sale",
+                                description=tx_desc,
+                                amount=alloc.amount,
+                                factory_name=goods.factory_name,
+                                goods_id=goods.id,
+                                sales_id=sale.id,
+                                account_holder_id=ah.id
+                            ))
+            elif sale_in.account_holder_id:
+                account_holder = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale_in.account_holder_id).first()
+                if account_holder:
+                    account_holder.current_balance += p_amount
 
     db.commit()
     db.refresh(sale)

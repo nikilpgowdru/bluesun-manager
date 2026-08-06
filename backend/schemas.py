@@ -44,6 +44,10 @@ class GoodsOut(BaseModel):
     class Config:
         from_attributes = True
 
+class AccountAllocation(BaseModel):
+    account_holder_id: int
+    amount: float = Field(..., gt=0)
+
 class SaleCreate(BaseModel):
     date: str # YYYY-MM-DD
     sold_to: str
@@ -57,6 +61,7 @@ class SaleCreate(BaseModel):
     receipt: str
     receiver: str # "Expense" or "Saving"
     account_holder_id: Optional[int] = None
+    account_allocations: Optional[List[AccountAllocation]] = None
     expense_description: Optional[str] = None
 
     @field_validator('receiver')
@@ -279,6 +284,7 @@ class SaleUpdate(BaseModel):
     receipt: Optional[str] = None
     receiver: Optional[str] = None
     account_holder_id: Optional[int] = None
+    account_allocations: Optional[List[AccountAllocation]] = None
     expense_description: Optional[str] = None
 
 class AccountHolderUpdate(BaseModel):

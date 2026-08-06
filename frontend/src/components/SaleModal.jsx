@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { createSale, updateSale, getAccountHolders, createAccountHolder } from '../api';
-import { Plus, UserPlus, Search } from 'lucide-react';
+import { Plus, UserPlus, Search, Trash2, Split } from 'lucide-react';
 
 export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSuccess, initialData = null }) {
   const [accountHolders, setAccountHolders] = useState([]);
@@ -22,6 +22,13 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
   const [customGstAmount, setCustomGstAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Multi-Account Split Deposit States
+  const [depositMode, setDepositMode] = useState('single'); // 'single' or 'split'
+  const [allocations, setAllocations] = useState([
+    { account_holder_id: '', amount: '' },
+    { account_holder_id: '', amount: '' },
+  ]);
 
   // Inline Account Holder creation & search states
   const [showNewAccountForm, setShowNewAccountForm] = useState(false);
@@ -45,6 +52,7 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
           payment_status: initialData.payment_status || 'Paid',
           paid_amount: initialData.paid_amount !== undefined ? initialData.paid_amount : '',
         });
+        setDepositMode('single');
         if (initialData.gst_amount > 0 && (!initialData.gst_percent || initialData.gst_percent === 0)) {
           setGstOption('custom');
           setCustomGstAmount(initialData.gst_amount);
@@ -66,6 +74,11 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
           payment_status: 'Paid',
           paid_amount: '',
         });
+        setDepositMode('single');
+        setAllocations([
+          { account_holder_id: '', amount: '' },
+          { account_holder_id: '', amount: '' },
+        ]);
         setGstOption('none');
         setCustomGstAmount('');
       }
@@ -76,8 +89,14 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
     try {
       const res = await getAccountHolders();
       setAccountHolders(res.data);
-      if (res.data.length > 0 && !formData.account_holder_id) {
-        setFormData(prev => ({ ...prev, account_holder_id: res.data[0].id }));
+      if (res.data.length > 0) {
+        if (!formData.account_holder_id) {
+          setFormData(prev => ({ ...prev, account_holder_id: res.data[0].id }));
+        }
+        setAllocations(prev => prev.map((a, idx) => ({
+          ...a,
+          account_holder_id: a.account_holder_id || res.data[Math.min(idx, res.data.length - 1)]?.id || ''
+        })));
       }
     } catch (err) {
       console.error('Error fetching account holders:', err);
@@ -126,6 +145,30 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
     calculatedBalanceDue = Math.max(0, finalTotal - calculatedPaidAmount);
   }
 
+  const handleAddAllocation = () => {
+    const defaultId = accountHolders.length > 0 ? accountHolders[Math.min(allocations.length, accountHolders.length - 1)]?.id : '';
+    setAllocations([...allocations, { account_holder_id: defaultId, amount: '' }]);
+  };
+
+  const handleRemoveAllocation = (index) => {
+    if (allocations.length <= 1) return;
+    setAllocations(allocations.filter((_, i) => i !== index));
+  };
+
+  const handleAllocationChange = (index, field, value) => {
+    const newAllocations = [...allocations];
+    newAllocations[index][field] = value;
+    setAllocations(newAllocations);
+  };
+
+  const handleAutoFillRemaining = (index) => {
+    const otherSum = allocations.reduce((sum, a, i) => i === index ? sum : sum + (parseFloat(a.amount) || 0), 0);
+    const remaining = Math.max(0, calculatedPaidAmount - otherSum);
+    handleAllocationChange(index, 'amount', remaining.toFixed(2));
+  };
+
+  const totalAllocated = allocations.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -151,9 +194,37 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
       return;
     }
 
-    if (formData.receiver === 'Saving' && !formData.account_holder_id) {
-      setError('Please select an Account Holder for Saving.');
-      return;
+    let finalAllocations = null;
+
+    if (formData.receiver === 'Saving') {
+      if (depositMode === 'split') {
+        if (calculatedPaidAmount > 0) {
+          for (let i = 0; i < allocations.length; i++) {
+            const alloc = allocations[i];
+            if (!alloc.account_holder_id) {
+              setError(`Please select an Account Holder for row #${i + 1}.`);
+              return;
+            }
+            if (isNaN(parseFloat(alloc.amount)) || parseFloat(alloc.amount) <= 0) {
+              setError(`Please enter a valid deposit amount for row #${i + 1}.`);
+              return;
+            }
+          }
+          if (Math.abs(totalAllocated - calculatedPaidAmount) > 0.05) {
+            setError(`Total split deposits (₹${totalAllocated.toFixed(2)}) must equal amount received (₹${calculatedPaidAmount.toFixed(2)}).`);
+            return;
+          }
+          finalAllocations = allocations.map(a => ({
+            account_holder_id: parseInt(a.account_holder_id),
+            amount: parseFloat(a.amount)
+          }));
+        }
+      } else {
+        if (!formData.account_holder_id) {
+          setError('Please select an Account Holder for Saving.');
+          return;
+        }
+      }
     }
 
     if (formData.receiver === 'Expense' && !formData.expense_description.trim()) {
@@ -172,7 +243,8 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
         payment_status: formData.payment_status,
         paid_amount: calculatedPaidAmount,
         balance_due: calculatedBalanceDue,
-        account_holder_id: formData.receiver === 'Saving' ? parseInt(formData.account_holder_id) : null,
+        account_holder_id: (formData.receiver === 'Saving' && depositMode === 'single') ? parseInt(formData.account_holder_id) : null,
+        account_allocations: (formData.receiver === 'Saving' && depositMode === 'split') ? finalAllocations : null,
         expense_description: formData.receiver === 'Expense' ? formData.expense_description : null,
       };
 
@@ -279,12 +351,6 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
                 </div>
               </div>
             </div>
-          )}
-
-          {formData.payment_status === 'Pending' && (
-            <p className="text-xs font-bold text-rose-700 pt-1">
-              ⚠️ Entire amount (₹{finalTotal.toLocaleString('en-IN')}) will be registered as pending balance in customer history.
-            </p>
           )}
         </div>
 
@@ -438,10 +504,10 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
         </div>
 
         {formData.receiver === 'Saving' && (
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                Account Holder *
+                Account Deposit Mode *
               </label>
               <button
                 type="button"
@@ -476,32 +542,136 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
               </div>
             )}
 
-            {accountHolders.length > 5 && (
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Filter account holders..."
-                  value={accountSearchQuery}
-                  onChange={(e) => setAccountSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white"
-                />
+            {/* Deposit Mode Selector */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDepositMode('single')}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition-all ${
+                  depositMode === 'single'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                }`}
+              >
+                Single Account Deposit
+              </button>
+              <button
+                type="button"
+                onClick={() => setDepositMode('split')}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center gap-1.5 ${
+                  depositMode === 'split'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50'
+                }`}
+              >
+                <Split className="w-3.5 h-3.5" />
+                Split Across Accounts (+3)
+              </button>
+            </div>
+
+            {depositMode === 'single' ? (
+              <div>
+                {accountHolders.length > 5 && (
+                  <div className="relative mb-2">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Filter account holders..."
+                      value={accountSearchQuery}
+                      onChange={(e) => setAccountSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white"
+                    />
+                  </div>
+                )}
+                <select
+                  value={formData.account_holder_id}
+                  onChange={(e) => setFormData({ ...formData, account_holder_id: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                >
+                  {accountHolders
+                    .filter(ah => ah.name.toLowerCase().includes(accountSearchQuery.toLowerCase()))
+                    .map(ah => (
+                      <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
+                        {ah.name} (Current: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ) : (
+              /* Multi-Account Split Rows */
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between text-xs font-extrabold text-slate-800">
+                  <span>Allocate Amounts to Multiple Accounts:</span>
+                  <span className={`px-2 py-0.5 rounded-md text-[11px] ${
+                    Math.abs(totalAllocated - calculatedPaidAmount) < 0.05
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold'
+                      : 'bg-rose-100 text-rose-800 border border-rose-300 font-extrabold'
+                  }`}>
+                    Allocated: ₹{totalAllocated.toFixed(2)} / Required: ₹{calculatedPaidAmount.toFixed(2)}
+                  </span>
+                </div>
+
+                {allocations.map((alloc, idx) => (
+                  <div key={idx} className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black text-slate-700 uppercase">Account #{idx + 1}</span>
+                      {allocations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAllocation(idx)}
+                          className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded"
+                          title="Remove Row"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <select
+                        value={alloc.account_holder_id}
+                        onChange={(e) => handleAllocationChange(idx, 'account_holder_id', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-slate-900 font-bold bg-white text-xs"
+                      >
+                        <option value="">Select Account Holder</option>
+                        {accountHolders.map(ah => (
+                          <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
+                            {ah.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex gap-1.5">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Amount ₹"
+                          value={alloc.amount}
+                          onChange={(e) => handleAllocationChange(idx, 'amount', e.target.value)}
+                          className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-slate-900 font-bold bg-white text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAutoFillRemaining(idx)}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-extrabold border border-slate-300"
+                          title="Auto Fill Remaining Balance"
+                        >
+                          Fill Rem.
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={handleAddAllocation}
+                  className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-extrabold border border-indigo-200 flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  + Add Another Account Deposit (3+ Accounts)
+                </button>
               </div>
             )}
-
-            <select
-              value={formData.account_holder_id}
-              onChange={(e) => setFormData({ ...formData, account_holder_id: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
-            >
-              {accountHolders
-                .filter(ah => ah.name.toLowerCase().includes(accountSearchQuery.toLowerCase()))
-                .map(ah => (
-                  <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
-                    {ah.name} (Current: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
-                  </option>
-                ))}
-            </select>
           </div>
         )}
 
