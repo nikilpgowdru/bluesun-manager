@@ -1,13 +1,30 @@
-import React from 'react';
-import { Menu, Clock, Sparkles, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, Clock, Sparkles, ShieldCheck, Database } from 'lucide-react';
+import { seedDatabase } from '../api';
 
 export default function Navbar({ onMenuToggle, pageTitle }) {
+  const [loadingSeed, setLoadingSeed] = useState(false);
+
   const currentDate = new Date().toLocaleDateString('en-IN', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
+
+  const handleRestoreDemoData = async () => {
+    if (window.confirm('Restore all default sample data (Jeans, Shirts, Formals, Sales, Account Balances)?')) {
+      try {
+        setLoadingSeed(true);
+        await seedDatabase();
+        window.location.reload();
+      } catch (err) {
+        alert('Failed to restore data: ' + (err.response?.data?.detail || err.message));
+      } finally {
+        setLoadingSeed(false);
+      }
+    }
+  };
 
   return (
     <header className="h-20 bg-[#07090e]/80 border-b border-slate-800/80 sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between backdrop-blur-xl">
@@ -29,6 +46,17 @@ export default function Navbar({ onMenuToggle, pageTitle }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Restore Data Button */}
+        <button
+          onClick={handleRestoreDemoData}
+          disabled={loadingSeed}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm transition-all border border-indigo-500/40"
+          title="Click to restore all default sample data"
+        >
+          <Database className="w-3.5 h-3.5" />
+          <span>{loadingSeed ? 'Restoring...' : 'Restore All Data'}</span>
+        </button>
+
         {/* Date Display */}
         <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-semibold text-slate-300">
           <Clock className="w-3.5 h-3.5 text-indigo-400" />

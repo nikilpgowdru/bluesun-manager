@@ -291,10 +291,23 @@ def delete_account_holder(account_holder_id: int, db: Session = Depends(database
 def delete_expense(expense_id: int, db: Session = Depends(database.get_db)):
     return crud.delete_expense(db, expense_id)
 
-# 10. Fresh Setup Reset Database Endpoint
+# 10. Fresh Setup Reset & Seed Database Endpoints
 @app.post("/api/reset-database")
 def reset_database(db: Session = Depends(database.get_db)):
     return crud.reset_database(db)
+
+@app.post("/api/seed-database")
+def seed_database_endpoint(db: Session = Depends(database.get_db)):
+    db.query(models.Transaction).delete()
+    db.query(models.Sale).delete()
+    db.query(models.Expense).delete()
+    db.query(models.ChansandraEntry).delete()
+    db.query(models.Goods).delete()
+    db.query(models.AccountHolder).delete()
+    db.query(models.BusinessUnit).delete()
+    db.commit()
+    seed.seed_db(db)
+    return {"message": "All default data successfully restored!"}
 
 # 11. Cloud Backup Endpoint (5TB Storage Sync)
 @app.get("/api/cloud/export-backup")

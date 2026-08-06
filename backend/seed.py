@@ -4,42 +4,48 @@ import crud
 import schemas
 
 def seed_db(db: Session):
-    # Check if DB already seeded
-    if db.query(models.BusinessUnit).first():
-        return
-
-    # 1. Create Business Units
+    # 1. Create Business Units if missing
     factories = ["Jeans", "Shirts", "Formals"]
     for f in factories:
-        db.add(models.BusinessUnit(name=f))
+        if not db.query(models.BusinessUnit).filter(models.BusinessUnit.name == f).first():
+            db.add(models.BusinessUnit(name=f))
     db.commit()
 
-    # 2. Create Account Holders
-    ah1 = models.AccountHolder(name="HDFC Corporate Account", current_balance=45000.0)
-    ah2 = models.AccountHolder(name="ICICI Factory Fund", current_balance=28500.0)
-    ah3 = models.AccountHolder(name="Petty Cash Account", current_balance=5000.0)
-    db.add_all([ah1, ah2, ah3])
-    db.commit()
+    # 2. Create Account Holders if missing
+    if not db.query(models.AccountHolder).first():
+        ah1 = models.AccountHolder(name="HDFC Corporate Account", current_balance=45000.0)
+        ah2 = models.AccountHolder(name="ICICI Factory Fund", current_balance=28500.0)
+        ah3 = models.AccountHolder(name="Petty Cash Account", current_balance=5000.0)
+        db.add_all([ah1, ah2, ah3])
+        db.commit()
 
-    # 3. Create Demo Goods across factories
+    ah1 = db.query(models.AccountHolder).filter(models.AccountHolder.name == "HDFC Corporate Account").first()
+    ah2 = db.query(models.AccountHolder).filter(models.AccountHolder.name == "ICICI Factory Fund").first()
+    ah3 = db.query(models.AccountHolder).filter(models.AccountHolder.name == "Petty Cash Account").first()
+
+    # 3. Create Demo Goods across factories if Goods table is empty
+    if db.query(models.Goods).count() > 0:
+        return
+
     goods_sample_data = [
         # Jeans
-        {"factory": "Jeans", "type": "Slim Fit Denim", "brand": "Bluesun Urban Jeans", "date": "2026-06-10", "total": 1200, "rejected": 40},
-        {"factory": "Jeans", "type": "Regular Fit Vintage", "brand": "Bluesun Classic Denim", "date": "2026-07-05", "total": 1500, "rejected": 50},
-        {"factory": "Jeans", "type": "Skinny Stretch Jeans", "brand": "Bluesun NextGen", "date": "2026-08-01", "total": 800, "rejected": 20},
+        {"batch": "BATCH-2026-J01", "factory": "Jeans", "type": "Slim Fit Denim", "brand": "Bluesun Urban Jeans", "date": "2026-06-10", "total": 1200, "rejected": 40},
+        {"batch": "BATCH-2026-J02", "factory": "Jeans", "type": "Regular Fit Vintage", "brand": "Bluesun Classic Denim", "date": "2026-07-05", "total": 1500, "rejected": 50},
+        {"batch": "BATCH-2026-J03", "factory": "Jeans", "type": "Skinny Stretch Jeans", "brand": "Bluesun NextGen", "date": "2026-08-01", "total": 800, "rejected": 20},
         # Shirts
-        {"factory": "Shirts", "type": "Cotton Formal Shirt", "brand": "Bluesun Signature Shirts", "date": "2026-06-15", "total": 2000, "rejected": 60},
-        {"factory": "Shirts", "type": "Linen Casual Shirt", "brand": "Bluesun Breeze", "date": "2026-07-12", "total": 1800, "rejected": 45},
-        {"factory": "Shirts", "type": "Oxford Button-Down", "brand": "Bluesun Executive", "date": "2026-08-02", "total": 1100, "rejected": 30},
+        {"batch": "BATCH-2026-S01", "factory": "Shirts", "type": "Cotton Formal Shirt", "brand": "Bluesun Signature Shirts", "date": "2026-06-15", "total": 2000, "rejected": 60},
+        {"batch": "BATCH-2026-S02", "factory": "Shirts", "type": "Linen Casual Shirt", "brand": "Bluesun Breeze", "date": "2026-07-12", "total": 1800, "rejected": 45},
+        {"batch": "BATCH-2026-S03", "factory": "Shirts", "type": "Oxford Button-Down", "brand": "Bluesun Executive", "date": "2026-08-02", "total": 1100, "rejected": 30},
         # Formals
-        {"factory": "Formals", "type": "Single Breasted Blazer", "brand": "Bluesun Royal Formals", "date": "2026-06-20", "total": 600, "rejected": 15},
-        {"factory": "Formals", "type": "Formal Trousers Slim", "brand": "Bluesun Imperial Trousers", "date": "2026-07-18", "total": 1400, "rejected": 35},
-        {"factory": "Formals", "type": "3-Piece Tuxedo Set", "brand": "Bluesun Elite Tailors", "date": "2026-07-28", "total": 400, "rejected": 10},
+        {"batch": "BATCH-2026-F01", "factory": "Formals", "type": "Single Breasted Blazer", "brand": "Bluesun Royal Formals", "date": "2026-06-20", "total": 600, "rejected": 15},
+        {"batch": "BATCH-2026-F02", "factory": "Formals", "type": "Formal Trousers Slim", "brand": "Bluesun Imperial Trousers", "date": "2026-07-18", "total": 1400, "rejected": 35},
+        {"batch": "BATCH-2026-F03", "factory": "Formals", "type": "3-Piece Tuxedo Set", "brand": "Bluesun Elite Tailors", "date": "2026-07-28", "total": 400, "rejected": 10},
     ]
 
     created_goods = []
     for g in goods_sample_data:
         good = crud.create_goods(db, schemas.GoodsCreate(
+            batch_number=g["batch"],
             factory_name=g["factory"],
             type=g["type"],
             brand_name=g["brand"],

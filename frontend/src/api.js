@@ -33,6 +33,7 @@ export const deleteSale = (id) => api.delete(`/sales/${id}`);
 export const deleteAccountHolder = (id) => api.delete(`/account-holders/${id}`);
 export const deleteExpense = (id) => api.delete(`/expenses/${id}`);
 export const resetDatabase = () => api.post('/reset-database');
+export const seedDatabase = () => api.post('/seed-database');
 
 export const updateGoods = (id, data) => api.put(`/goods/${id}`, data);
 export const updateSale = (id, data) => api.put(`/sales/${id}`, data);
