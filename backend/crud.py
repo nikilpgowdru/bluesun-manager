@@ -581,15 +581,17 @@ def update_sale(db: Session, sale_id: int, sale_in: schemas.SaleUpdate):
     goods.sold_pcs = max(0, goods.sold_pcs - sale.quantity)
     goods.total_earnings = max(0.0, goods.total_earnings - sale.total_amount)
     
+    old_p_amount = getattr(sale, 'paid_amount', sale.total_amount) if getattr(sale, 'paid_amount', None) is not None else sale.total_amount
+
     if sale.receiver == "Saving" and sale.account_holder_id:
         ah_old = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
         if ah_old:
-            ah_old.current_balance = max(0.0, ah_old.current_balance - sale.total_amount)
+            ah_old.current_balance = max(0.0, ah_old.current_balance - old_p_amount)
     elif sale.receiver == "Expense":
         db.query(models.Expense).filter(
             models.Expense.factory_name == goods.factory_name,
             models.Expense.date == sale.date,
-            models.Expense.amount == sale.total_amount,
+            models.Expense.amount == old_p_amount,
             models.Expense.is_from_sale == True
         ).delete()
 
@@ -600,12 +602,39 @@ def update_sale(db: Session, sale_id: int, sale_in: schemas.SaleUpdate):
     if new_qty > goods.available_pcs:
         raise HTTPException(status_code=400, detail=f"Requested quantity ({new_qty}) exceeds available stock ({goods.available_pcs})")
 
-    new_total = round(new_qty * new_price, 2)
+    subtotal = round(new_qty * new_price, 2)
+    gst_pct = sale_in.gst_percent if sale_in.gst_percent is not None else sale.gst_percent
+    if sale_in.gst_amount is not None and sale_in.gst_amount > 0:
+        gst_amt = round(sale_in.gst_amount, 2)
+    else:
+        gst_amt = round(subtotal * ((gst_pct or 0.0) / 100.0), 2)
+
+    new_total = round(subtotal + gst_amt, 2)
+
+    # Calculate payment status & paid amount
+    new_p_status = sale_in.payment_status or sale.payment_status or "Paid"
+    if new_p_status == "Paid":
+        new_p_amount = new_total
+        new_b_due = 0.0
+    elif new_p_status == "Pending":
+        new_p_amount = 0.0
+        new_b_due = new_total
+    else: # Partial
+        new_p_amount = round(sale_in.paid_amount if sale_in.paid_amount is not None else sale.paid_amount, 2)
+        new_b_due = round(max(0.0, new_total - new_p_amount), 2)
+        if new_b_due == 0.0:
+            new_p_status = "Paid"
+
     sale.date = sale_in.date or sale.date
     sale.sold_to = sale_in.sold_to or sale.sold_to
     sale.quantity = new_qty
     sale.price = new_price
+    sale.gst_percent = gst_pct
+    sale.gst_amount = gst_amt
     sale.total_amount = new_total
+    sale.payment_status = new_p_status
+    sale.paid_amount = new_p_amount
+    sale.balance_due = new_b_due
     sale.receipt = sale_in.receipt or sale.receipt
     sale.receiver = sale_in.receiver or sale.receiver
     sale.account_holder_id = sale_in.account_holder_id if sale.receiver == "Saving" else None
@@ -617,7 +646,8 @@ def update_sale(db: Session, sale_id: int, sale_in: schemas.SaleUpdate):
 
     # Re-create transaction
     db.query(models.Transaction).filter(models.Transaction.sales_id == sale.id).delete()
-    tx_desc = f"Sale: {goods.brand_name} ({goods.type}) x {new_qty} pcs to {sale.sold_to}"
+    tx_status_text = f" ({new_p_status})" if new_p_status != "Paid" else ""
+    tx_desc = f"Sale: {goods.brand_name} ({goods.type}) x {new_qty} pcs to {sale.sold_to}{tx_status_text}"
     tx = models.Transaction(
         date=sale.date,
         type="Sale",
@@ -630,20 +660,29 @@ def update_sale(db: Session, sale_id: int, sale_in: schemas.SaleUpdate):
     )
     db.add(tx)
 
-    if sale.receiver == "Expense":
-        exp_desc = sale.expense_description or f"Expense from Sale of {goods.brand_name}"
-        db.add(models.Expense(
-            factory_name=goods.factory_name,
-            date=sale.date,
-            expense_description=exp_desc,
-            amount=new_total,
-            account_holder_id=None,
-            is_from_sale=True
-        ))
-    elif sale.receiver == "Saving" and sale.account_holder_id:
-        ah_new = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
-        if ah_new:
-            ah_new.current_balance += new_total
+    # ONLY apply actual transferred cash `new_p_amount` to Account Holders / Expense
+    if new_p_amount > 0:
+        if sale.receiver == "Expense":
+            exp_desc = sale.expense_description or f"Expense from Sale of {goods.brand_name}"
+            db.add(models.Expense(
+                factory_name=goods.factory_name,
+                date=sale.date,
+                expense_description=exp_desc,
+                amount=new_p_amount,
+                account_holder_id=None,
+                is_from_sale=True
+            ))
+        elif sale.receiver == "Saving":
+            if sale_in.account_allocations and len(sale_in.account_allocations) > 0:
+                for alloc in sale_in.account_allocations:
+                    if alloc.amount > 0:
+                        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == alloc.account_holder_id).first()
+                        if ah:
+                            ah.current_balance += alloc.amount
+            elif sale.account_holder_id:
+                ah_new = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
+                if ah_new:
+                    ah_new.current_balance += new_p_amount
 
     db.commit()
     db.refresh(sale)
@@ -798,15 +837,17 @@ def delete_sale(db: Session, sale_id: int):
         goods.sold_pcs = max(0, goods.sold_pcs - sale.quantity)
         goods.total_earnings = max(0.0, goods.total_earnings - sale.total_amount)
 
+    old_p_amount = getattr(sale, 'paid_amount', sale.total_amount) if getattr(sale, 'paid_amount', None) is not None else sale.total_amount
+
     if sale.receiver == "Saving" and sale.account_holder_id:
         ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale.account_holder_id).first()
         if ah:
-            ah.current_balance = max(0.0, ah.current_balance - sale.total_amount)
+            ah.current_balance = max(0.0, ah.current_balance - old_p_amount)
     elif sale.receiver == "Expense":
         db.query(models.Expense).filter(
             models.Expense.factory_name == (goods.factory_name if goods else "Jeans"),
             models.Expense.date == sale.date,
-            models.Expense.amount == sale.total_amount,
+            models.Expense.amount == old_p_amount,
             models.Expense.is_from_sale == True
         ).delete()
 
