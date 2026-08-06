@@ -15,60 +15,32 @@ models.Base.metadata.create_all(bind=database.engine)
 
 # Auto migrate existing tables for new GST and Balance columns
 def run_auto_migrations(engine):
-    try:
-        inspector = inspect(engine)
-        with engine.begin() as conn:
-            if inspector.has_table('sales'):
-                columns = [c['name'] for c in inspector.get_columns('sales')]
-                if 'gst_percent' not in columns:
-                    try:
-                        conn.execute(text("ALTER TABLE sales ADD COLUMN gst_percent FLOAT DEFAULT 0.0"))
-                    except Exception as e:
-                        print("Migration gst_percent info:", e)
-                if 'gst_amount' not in columns:
-                    try:
-                        conn.execute(text("ALTER TABLE sales ADD COLUMN gst_amount FLOAT DEFAULT 0.0"))
-                    except Exception as e:
-                        print("Migration gst_amount info:", e)
-                if 'payment_status' not in columns:
-                    try:
-                        conn.execute(text("ALTER TABLE sales ADD COLUMN payment_status VARCHAR DEFAULT 'Paid'"))
-                    except Exception as e:
-                        print("Migration payment_status info:", e)
-                if 'paid_amount' not in columns:
-                    try:
-                        conn.execute(text("ALTER TABLE sales ADD COLUMN paid_amount FLOAT DEFAULT 0.0"))
-                    except Exception as e:
-                        print("Migration paid_amount info:", e)
-                if 'balance_due' not in columns:
-                    try:
-                        conn.execute(text("ALTER TABLE sales ADD COLUMN balance_due FLOAT DEFAULT 0.0"))
-                    except Exception as e:
-                        print("Migration balance_due info:", e)
-                if 'batch_number' not in columns:
-                    try:
-                        conn.execute(text("ALTER TABLE sales ADD COLUMN batch_number VARCHAR DEFAULT ''"))
-                    except Exception as e:
-                        print("Migration sales batch_number info:", e)
-
-            if inspector.has_table("goods"):
-                g_columns = [col['name'] for col in inspector.get_columns("goods")]
-                if 'batch_number' not in g_columns:
-                    try:
-                        conn.execute(text("ALTER TABLE goods ADD COLUMN batch_number VARCHAR DEFAULT 'BATCH-DEFAULT'"))
-                    except Exception as e:
-                        print("Migration goods batch_number info:", e)
-    except Exception as err:
-        print("Auto-migration exception:", err)
+    migrations = [
+        "ALTER TABLE sales ADD COLUMN gst_percent FLOAT DEFAULT 0.0",
+        "ALTER TABLE sales ADD COLUMN gst_amount FLOAT DEFAULT 0.0",
+        "ALTER TABLE sales ADD COLUMN payment_status VARCHAR DEFAULT 'Paid'",
+        "ALTER TABLE sales ADD COLUMN paid_amount FLOAT DEFAULT 0.0",
+        "ALTER TABLE sales ADD COLUMN balance_due FLOAT DEFAULT 0.0",
+        "ALTER TABLE sales ADD COLUMN batch_number VARCHAR DEFAULT ''",
+        "ALTER TABLE goods ADD COLUMN batch_number VARCHAR DEFAULT 'BATCH-DEFAULT'"
+    ]
+    with engine.begin() as conn:
+        for query in migrations:
+            try:
+                conn.execute(text(query))
+            except Exception as e:
+                pass
 
 run_auto_migrations(database.engine)
 
-# Seed sample data on launch
-db_session = database.SessionLocal()
-try:
-    seed.seed_db(db_session)
-finally:
-    db_session.close()
+@app.on_event("startup")
+def startup_event():
+    run_auto_migrations(database.engine)
+    db = database.SessionLocal()
+    try:
+        seed.seed_db(db)
+    finally:
+        db.close()
 
 app = FastAPI(title="Bluesun Manager ERP API", version="1.0.0")
 
