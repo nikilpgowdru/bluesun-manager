@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, ArrowLeftRight, Users, CreditCard, FileText, Shirt, Sparkles, Scale, Landmark } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, ArrowLeftRight, Users, CreditCard, FileText, Shirt, Sparkles, Scale, Landmark } from 'lucide-react';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Garment Inventory', path: '/goods', icon: Package },
+    { label: 'Sales Hub', path: '/sales', icon: ShoppingBag },
     { label: 'Transactions', path: '/transactions', icon: ArrowLeftRight },
     { label: 'Pending Balances', path: '/balances', icon: Scale },
     { label: 'Chansandra', path: '/chansandra', icon: Landmark },

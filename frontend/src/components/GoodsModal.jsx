@@ -4,6 +4,7 @@ import { createGoods, updateGoods } from '../api';
 
 export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = null }) {
   const [formData, setFormData] = useState({
+    batch_number: '',
     factory_name: 'Jeans',
     type: '',
     brand_name: '',
@@ -17,6 +18,7 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
   useEffect(() => {
     if (initialData) {
       setFormData({
+        batch_number: initialData.batch_number || '',
         factory_name: initialData.factory_name || 'Jeans',
         type: initialData.type || '',
         brand_name: initialData.brand_name || '',
@@ -26,6 +28,7 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
       });
     } else {
       setFormData({
+        batch_number: `BATCH-${Date.now().toString().slice(-6)}`,
         factory_name: 'Jeans',
         type: '',
         brand_name: '',
@@ -95,7 +98,20 @@ export default function GoodsModal({ isOpen, onClose, onSuccess, initialData = n
 
         <div>
           <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
-            Factory *
+            Batch Number *
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. BATCH-2026-001"
+            value={formData.batch_number}
+            onChange={(e) => setFormData({ ...formData, batch_number: e.target.value })}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
+            Factory Category *
           </label>
           <select
             value={formData.factory_name}

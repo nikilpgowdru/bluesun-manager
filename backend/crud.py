@@ -7,6 +7,7 @@ from fastapi import HTTPException
 def goods_to_out(g: models.Goods) -> schemas.GoodsOut:
     return schemas.GoodsOut(
         id=g.id,
+        batch_number=g.batch_number or "BATCH-DEFAULT",
         factory_name=g.factory_name,
         type=g.type,
         brand_name=g.brand_name,
@@ -24,17 +25,21 @@ def get_business_units(db: Session):
     return db.query(models.BusinessUnit).all()
 
 # Goods
-def get_goods(db: Session, factory: str = None, month: str = None):
+def get_goods(db: Session, factory: str = None, month: str = None, batch: str = None):
     query = db.query(models.Goods)
     if factory and factory != "All":
         query = query.filter(models.Goods.factory_name == factory)
     if month and month != "All":
         query = query.filter(models.Goods.manufacture_date.startswith(month))
-    goods_list = query.order_by(models.Goods.manufacture_date.desc()).all()
+    if batch and batch != "All":
+        query = query.filter(models.Goods.batch_number == batch)
+    goods_list = query.order_by(models.Goods.manufacture_date.desc(), models.Goods.id.desc()).all()
     return [goods_to_out(g) for g in goods_list]
 
 def create_goods(db: Session, goods_in: schemas.GoodsCreate):
+    b_num = goods_in.batch_number if goods_in.batch_number and goods_in.batch_number.strip() else f"BATCH-{goods_in.manufacture_date.replace('-', '')[:6]}-{goods_in.factory_name[:3].upper()}"
     goods = models.Goods(
+        batch_number=b_num,
         factory_name=goods_in.factory_name,
         type=goods_in.type,
         brand_name=goods_in.brand_name,
@@ -204,6 +209,188 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
     db.commit()
     db.refresh(sale)
     return sale
+
+def get_all_sales(db: Session, month: str = None):
+    query = db.query(models.Sale)
+    if month and month != "All":
+        query = query.filter(models.Sale.date.startswith(month))
+    sales = query.order_by(models.Sale.date.desc(), models.Sale.id.desc()).all()
+    
+    result = []
+    for s in sales:
+        g = db.query(models.Goods).filter(models.Goods.id == s.goods_id).first()
+        ah_name = None
+        if s.account_holder_id:
+            ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == s.account_holder_id).first()
+            if ah:
+                ah_name = ah.name
+        result.append(schemas.SaleOut(
+            id=s.id,
+            goods_id=s.goods_id,
+            batch_number=s.batch_number or (g.batch_number if g else "BATCH-DEFAULT"),
+            factory_name=g.factory_name if g else "Unknown",
+            type=g.type if g else "Unknown",
+            brand_name=g.brand_name if g else "Unknown",
+            date=s.date,
+            sold_to=s.sold_to,
+            quantity=s.quantity,
+            price=s.price,
+            gst_percent=s.gst_percent,
+            gst_amount=s.gst_amount,
+            total_amount=s.total_amount,
+            payment_status=s.payment_status,
+            paid_amount=s.paid_amount,
+            balance_due=s.balance_due,
+            receipt=s.receipt,
+            receiver=s.receiver,
+            account_holder_id=s.account_holder_id,
+            expense_description=s.expense_description,
+            account_holder_name=ah_name
+        ))
+    return result
+
+def get_sales_summary(db: Session, month: str = None):
+    sales_query = db.query(models.Sale)
+    chansandra_query = db.query(models.ChansandraEntry)
+    if month and month != "All":
+        sales_query = sales_query.filter(models.Sale.date.startswith(month))
+        chansandra_query = chansandra_query.filter(models.ChansandraEntry.date.startswith(month))
+        
+    sales = sales_query.all()
+    chansandra_entries = chansandra_query.all()
+    
+    overall_total = sum(s.total_amount for s in sales) + sum(c.amount for c in chansandra_entries)
+    overall_units = sum(s.quantity for s in sales) + sum(c.quantity for c in chansandra_entries)
+    overall_pending = sum(s.balance_due for s in sales)
+    
+    cat_data = {
+        "Jeans": {"units_sold": 0, "total_revenue": 0.0},
+        "Shirts": {"units_sold": 0, "total_revenue": 0.0},
+        "Formals": {"units_sold": 0, "total_revenue": 0.0},
+    }
+    
+    for s in sales:
+        g = db.query(models.Goods).filter(models.Goods.id == s.goods_id).first()
+        if g and g.factory_name in cat_data:
+            cat_data[g.factory_name]["units_sold"] += s.quantity
+            cat_data[g.factory_name]["total_revenue"] += s.total_amount
+            
+    for c in chansandra_entries:
+        if c.factory_name in cat_data:
+            cat_data[c.factory_name]["units_sold"] += c.quantity
+            cat_data[c.factory_name]["total_revenue"] += c.amount
+            
+    return schemas.SalesSummaryOut(
+        overall_total_sales=round(overall_total, 2),
+        overall_units_sold=overall_units,
+        overall_pending_balance=round(overall_pending, 2),
+        jeans=schemas.GarmentCategorySummary(**cat_data["Jeans"]),
+        shirts=schemas.GarmentCategorySummary(**cat_data["Shirts"]),
+        formals=schemas.GarmentCategorySummary(**cat_data["Formals"])
+    )
+
+def create_multi_item_sale(db: Session, multi_in: schemas.MultiSaleCreate):
+    created_sales = []
+    
+    items_subtotal = sum(it.quantity * it.price for it in multi_in.items)
+    
+    gst_pct = multi_in.gst_percent or 0.0
+    if multi_in.gst_amount and multi_in.gst_amount > 0:
+        total_gst = multi_in.gst_amount
+    else:
+        total_gst = (items_subtotal * gst_pct) / 100.0
+        
+    grand_total = items_subtotal + total_gst
+    
+    p_status = multi_in.payment_status or "Paid"
+    if p_status == "Paid":
+        p_amount = grand_total
+        b_due = 0.0
+    elif p_status == "Pending":
+        p_amount = 0.0
+        b_due = grand_total
+    else:
+        p_amount = multi_in.paid_amount or 0.0
+        b_due = max(0.0, grand_total - p_amount)
+        
+    item_descriptions = []
+    for item in multi_in.items:
+        goods = db.query(models.Goods).filter(models.Goods.id == item.goods_id).first()
+        if not goods:
+            raise HTTPException(status_code=404, detail=f"Goods item ID {item.goods_id} not found")
+        if item.quantity > goods.available_pcs:
+            raise HTTPException(status_code=400, detail=f"Stock insufficient for {goods.brand_name} ({goods.type}). Requested {item.quantity}, available {goods.available_pcs}.")
+            
+        item_subtotal = item.quantity * item.price
+        item_gst = (item_subtotal / items_subtotal) * total_gst if items_subtotal > 0 else 0.0
+        item_total = item_subtotal + item_gst
+        item_paid = (item_subtotal / items_subtotal) * p_amount if items_subtotal > 0 else 0.0
+        item_due = item_total - item_paid
+        
+        goods.sold_pcs += item.quantity
+        goods.total_earnings += item_total
+        
+        sale = models.Sale(
+            goods_id=goods.id,
+            batch_number=goods.batch_number or "BATCH-DEFAULT",
+            date=multi_in.date,
+            sold_to=multi_in.sold_to,
+            quantity=item.quantity,
+            price=item.price,
+            gst_percent=gst_pct,
+            gst_amount=round(item_gst, 2),
+            total_amount=round(item_total, 2),
+            payment_status=p_status,
+            paid_amount=round(item_paid, 2),
+            balance_due=round(item_due, 2),
+            receipt=multi_in.receipt,
+            receiver=multi_in.receiver,
+            account_holder_id=multi_in.account_holder_id if multi_in.receiver == "Saving" else None,
+            expense_description=multi_in.expense_description if multi_in.receiver == "Expense" else None
+        )
+        db.add(sale)
+        db.flush()
+        created_sales.append(sale)
+        item_descriptions.append(f"{goods.brand_name} ({goods.factory_name}) x {item.quantity} pcs")
+
+    tx_status = f" ({p_status})" if p_status != "Paid" else ""
+    tx_desc = f"Multi-Sale ({', '.join(item_descriptions)}) to {multi_in.sold_to}{tx_status}"
+    tx = models.Transaction(
+        date=multi_in.date,
+        type="Sale",
+        description=tx_desc,
+        amount=round(grand_total, 2),
+        factory_name="Multi",
+        sales_id=created_sales[0].id if created_sales else None,
+        account_holder_id=multi_in.account_holder_id if multi_in.receiver == "Saving" else None
+    )
+    db.add(tx)
+    
+    if p_amount > 0:
+        if multi_in.receiver == "Expense":
+            exp_desc = multi_in.expense_description or f"Expense from Multi-Sale"
+            db.add(models.Expense(
+                factory_name="Multi",
+                date=multi_in.date,
+                expense_description=exp_desc,
+                amount=p_amount,
+                account_holder_id=None,
+                is_from_sale=True
+            ))
+        elif multi_in.receiver == "Saving":
+            if multi_in.account_allocations and len(multi_in.account_allocations) > 0:
+                for alloc in multi_in.account_allocations:
+                    if alloc.amount > 0:
+                        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == alloc.account_holder_id).first()
+                        if ah:
+                            ah.current_balance += alloc.amount
+            elif multi_in.account_holder_id:
+                ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == multi_in.account_holder_id).first()
+                if ah:
+                    ah.current_balance += p_amount
+
+    db.commit()
+    return [schemas.SaleOut.model_validate(s) for s in created_sales]
 
 # Transactions
 def get_transactions(db: Session, filter_type: str = "Both", month: str = None):

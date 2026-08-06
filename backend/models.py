@@ -13,6 +13,7 @@ class Goods(Base):
     __tablename__ = "goods"
 
     id = Column(Integer, primary_key=True, index=True)
+    batch_number = Column(String, nullable=True, index=True, default="BATCH-DEFAULT")
     factory_name = Column(String, nullable=False, index=True) # Jeans, Shirts, Formals
     type = Column(String, nullable=False)
     brand_name = Column(String, nullable=False)
@@ -48,6 +49,7 @@ class Sale(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     goods_id = Column(Integer, ForeignKey("goods.id"), nullable=False)
+    batch_number = Column(String, nullable=True, index=True)
     date = Column(String, nullable=False, index=True) # YYYY-MM-DD
     sold_to = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)

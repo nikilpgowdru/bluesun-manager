@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Goods from './pages/Goods';
 import GoodsDetails from './pages/GoodsDetails';
+import Sales from './pages/Sales';
 import Transactions from './pages/Transactions';
 import Balances from './pages/Balances';
 import Chansandra from './pages/Chansandra';
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/goods" element={<Goods />} />
         <Route path="/goods/:id" element={<GoodsDetails />} />
+        <Route path="/sales" element={<Sales />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/balances" element={<Balances />} />
         <Route path="/chansandra" element={<Chansandra />} />

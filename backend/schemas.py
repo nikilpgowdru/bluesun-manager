@@ -9,6 +9,7 @@ class BusinessUnitOut(BaseModel):
         from_attributes = True
 
 class GoodsCreate(BaseModel):
+    batch_number: Optional[str] = "BATCH-DEFAULT"
     factory_name: str # Jeans, Shirts, Formals
     type: str
     brand_name: str
@@ -30,6 +31,7 @@ class GoodsCreate(BaseModel):
 
 class GoodsOut(BaseModel):
     id: int
+    batch_number: Optional[str] = "BATCH-DEFAULT"
     factory_name: str
     type: str
     brand_name: str
@@ -49,6 +51,8 @@ class AccountAllocation(BaseModel):
     amount: float = Field(..., gt=0)
 
 class SaleCreate(BaseModel):
+    goods_id: Optional[int] = None
+    batch_number: Optional[str] = None
     date: str # YYYY-MM-DD
     sold_to: str
     quantity: int = Field(..., ge=1)
@@ -70,9 +74,32 @@ class SaleCreate(BaseModel):
             raise ValueError('Receiver must be Expense or Saving')
         return v
 
+class MultiSaleItemInput(BaseModel):
+    goods_id: int
+    quantity: int = Field(..., ge=1)
+    price: float = Field(..., gt=0)
+
+class MultiSaleCreate(BaseModel):
+    date: str
+    sold_to: str
+    receipt: str
+    items: List[MultiSaleItemInput]
+    gst_percent: Optional[float] = 0.0
+    gst_amount: Optional[float] = 0.0
+    payment_status: Optional[str] = "Paid"
+    paid_amount: Optional[float] = 0.0
+    receiver: str
+    account_holder_id: Optional[int] = None
+    account_allocations: Optional[List[AccountAllocation]] = None
+    expense_description: Optional[str] = None
+
 class SaleOut(BaseModel):
     id: int
     goods_id: int
+    batch_number: Optional[str] = None
+    factory_name: Optional[str] = None
+    type: Optional[str] = None
+    brand_name: Optional[str] = None
     date: str
     sold_to: str
     quantity: int
@@ -91,6 +118,18 @@ class SaleOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class GarmentCategorySummary(BaseModel):
+    units_sold: int = 0
+    total_revenue: float = 0.0
+
+class SalesSummaryOut(BaseModel):
+    overall_total_sales: float = 0.0
+    overall_units_sold: int = 0
+    overall_pending_balance: float = 0.0
+    jeans: GarmentCategorySummary
+    shirts: GarmentCategorySummary
+    formals: GarmentCategorySummary
 
 class PendingBalanceOut(BaseModel):
     sale_id: int

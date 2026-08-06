@@ -12,10 +12,13 @@ const api = axios.create({
 });
 
 export const getDashboardStats = (month) => api.get('/dashboard/stats', { params: { month } });
-export const getGoods = (factory, month) => api.get('/goods', { params: { factory, month } });
+export const getGoods = (factory, month, batch) => api.get('/goods', { params: { factory, month, batch } });
 export const createGoods = (data) => api.post('/goods', data);
 export const getGoodsDetail = (id) => api.get(`/goods/${id}`);
 export const createSale = (goodsId, data) => api.post(`/goods/${goodsId}/sales`, data);
+export const getSalesSummary = (month) => api.get('/sales/summary', { params: { month } });
+export const getAllSales = (month) => api.get('/sales', { params: { month } });
+export const createMultiItemSale = (data) => api.post('/sales/multi', data);
 export const getTransactions = (filterType, month) => api.get('/transactions', { params: { filter_type: filterType, month } });
 export const getAccountHolders = () => api.get('/account-holders');
 export const createAccountHolder = (data) => api.post('/account-holders', data);

@@ -45,6 +45,19 @@ def run_auto_migrations(engine):
                         conn.execute(text("ALTER TABLE sales ADD COLUMN balance_due FLOAT DEFAULT 0.0"))
                     except Exception as e:
                         print("Migration balance_due info:", e)
+                if 'batch_number' not in columns:
+                    try:
+                        conn.execute(text("ALTER TABLE sales ADD COLUMN batch_number VARCHAR DEFAULT ''"))
+                    except Exception as e:
+                        print("Migration sales batch_number info:", e)
+
+            if inspector.has_table("goods"):
+                g_columns = [col['name'] for col in inspector.get_columns("goods")]
+                if 'batch_number' not in g_columns:
+                    try:
+                        conn.execute(text("ALTER TABLE goods ADD COLUMN batch_number VARCHAR DEFAULT 'BATCH-DEFAULT'"))
+                    except Exception as e:
+                        print("Migration goods batch_number info:", e)
     except Exception as err:
         print("Auto-migration exception:", err)
 
@@ -90,9 +103,10 @@ def get_dashboard_stats(
 def get_goods(
     factory: Optional[str] = Query(None, description="Jeans, Shirts, Formals, or All"),
     month: Optional[str] = Query(None, description="Month format YYYY-MM or All"),
+    batch: Optional[str] = Query(None, description="Batch number or All"),
     db: Session = Depends(database.get_db)
 ):
-    return crud.get_goods(db, factory=factory, month=month)
+    return crud.get_goods(db, factory=factory, month=month, batch=batch)
 
 @app.post("/api/goods", response_model=schemas.GoodsOut, status_code=201)
 def create_goods(
@@ -115,6 +129,35 @@ def create_sale(
     db: Session = Depends(database.get_db)
 ):
     return crud.create_sale(db, goods_id, sale_in)
+
+# 3b. Sales Section Endpoints
+@app.get("/api/sales/summary", response_model=schemas.SalesSummaryOut)
+def get_sales_summary(
+    month: Optional[str] = Query(None, description="Month format YYYY-MM or All"),
+    db: Session = Depends(database.get_db)
+):
+    return crud.get_sales_summary(db, month=month)
+
+@app.get("/api/sales", response_model=List[schemas.SaleOut])
+def get_all_sales(
+    month: Optional[str] = Query(None, description="Month format YYYY-MM or All"),
+    db: Session = Depends(database.get_db)
+):
+    return crud.get_all_sales(db, month=month)
+
+@app.post("/api/sales/multi", response_model=List[schemas.SaleOut], status_code=201)
+def create_multi_sale(
+    multi_in: schemas.MultiSaleCreate,
+    db: Session = Depends(database.get_db)
+):
+    return crud.create_multi_item_sale(db, multi_in)
+
+@app.delete("/api/sales/{sale_id}")
+def delete_sale_endpoint(
+    sale_id: int,
+    db: Session = Depends(database.get_db)
+):
+    return crud.delete_sale(db, sale_id)
 
 # 4. Transactions
 @app.get("/api/transactions", response_model=List[schemas.TransactionOut])
