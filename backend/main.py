@@ -194,8 +194,11 @@ def settle_sale_balance(
 
 # 9. Chansandra Section
 @app.get("/api/chansandra", response_model=schemas.ChansandraSummary)
-def get_chansandra_summary(db: Session = Depends(database.get_db)):
-    return crud.get_chansandra_summary(db)
+def get_chansandra_summary(
+    month: Optional[str] = Query(None, description="Month format YYYY-MM or All"),
+    db: Session = Depends(database.get_db)
+):
+    return crud.get_chansandra_summary(db, month=month)
 
 @app.post("/api/chansandra", response_model=schemas.ChansandraEntryOut, status_code=201)
 def create_chansandra_entry(

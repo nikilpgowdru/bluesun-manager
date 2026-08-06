@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { createSale, updateSale, getAccountHolders } from '../api';
+import { createSale, updateSale, getAccountHolders, createAccountHolder } from '../api';
+import { Plus, UserPlus, Search } from 'lucide-react';
 
 export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSuccess, initialData = null }) {
   const [accountHolders, setAccountHolders] = useState([]);
@@ -21,6 +22,12 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
   const [customGstAmount, setCustomGstAmount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Inline Account Holder creation & search states
+  const [showNewAccountForm, setShowNewAccountForm] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountLoading, setNewAccountLoading] = useState(false);
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -74,6 +81,23 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
       }
     } catch (err) {
       console.error('Error fetching account holders:', err);
+    }
+  };
+
+  const handleCreateNewAccountHolder = async (e) => {
+    e.preventDefault();
+    if (!newAccountName.trim()) return;
+    try {
+      setNewAccountLoading(true);
+      const res = await createAccountHolder({ name: newAccountName.trim(), current_balance: 0 });
+      setAccountHolders(prev => [...prev, res.data]);
+      setFormData(prev => ({ ...prev, account_holder_id: res.data.id }));
+      setNewAccountName('');
+      setShowNewAccountForm(false);
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to create new account holder.');
+    } finally {
+      setNewAccountLoading(false);
     }
   };
 
@@ -414,20 +438,69 @@ export default function SaleModal({ isOpen, onClose, goodsId, availablePcs, onSu
         </div>
 
         {formData.receiver === 'Saving' && (
-          <div>
-            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1.5">
-              Account Holder *
-            </label>
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                Account Holder *
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowNewAccountForm(!showNewAccountForm)}
+                className="text-xs font-extrabold text-blue-700 hover:text-blue-900 flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                {showNewAccountForm ? 'Close' : '+ Add New Account'}
+              </button>
+            </div>
+
+            {showNewAccountForm && (
+              <div className="p-3 bg-white rounded-xl border border-blue-300 shadow-xs space-y-2">
+                <span className="text-xs font-extrabold text-slate-900 block">Create & Select New Account Holder</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Account Name (e.g. HDFC Bank, Cash Counter)"
+                    value={newAccountName}
+                    onChange={(e) => setNewAccountName(e.target.value)}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateNewAccountHolder}
+                    disabled={newAccountLoading || !newAccountName.trim()}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-extrabold hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {newAccountLoading ? 'Creating...' : 'Save & Select'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {accountHolders.length > 5 && (
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Filter account holders..."
+                  value={accountSearchQuery}
+                  onChange={(e) => setAccountSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-white"
+                />
+              </div>
+            )}
+
             <select
               value={formData.account_holder_id}
               onChange={(e) => setFormData({ ...formData, account_holder_id: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
             >
-              {accountHolders.map(ah => (
-                <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
-                  {ah.name} (Current: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
-                </option>
-              ))}
+              {accountHolders
+                .filter(ah => ah.name.toLowerCase().includes(accountSearchQuery.toLowerCase()))
+                .map(ah => (
+                  <option key={ah.id} value={ah.id} className="text-slate-900 bg-white font-bold">
+                    {ah.name} (Current: ₹{ah.current_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })})
+                  </option>
+                ))}
             </select>
           </div>
         )}

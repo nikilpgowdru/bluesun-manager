@@ -4,10 +4,11 @@ import StatCard from '../components/StatCard';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
 import { getChansandraSummary, createChansandraEntry, deleteChansandraEntry } from '../api';
-import { Landmark, Plus, Trash2, Package, Shirt, Sparkles, AlertCircle } from 'lucide-react';
+import { Landmark, Plus, Trash2, Package, Shirt, Sparkles, AlertCircle, Calendar } from 'lucide-react';
 
 export default function Chansandra() {
   const [summary, setSummary] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState('All');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -26,12 +27,12 @@ export default function Chansandra() {
 
   useEffect(() => {
     fetchSummary();
-  }, []);
+  }, [selectedMonth]);
 
   const fetchSummary = async () => {
     try {
       setLoading(true);
-      const res = await getChansandraSummary();
+      const res = await getChansandraSummary(selectedMonth);
       setSummary(res.data);
     } catch (err) {
       console.error('Error fetching Chansandra summary:', err);
@@ -170,6 +171,8 @@ export default function Chansandra() {
     }
   ];
 
+  const months = ['All', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04'];
+
   return (
     <Layout title="Chansandra Loan Payback Ledger">
       {/* Header Bar */}
@@ -183,13 +186,30 @@ export default function Chansandra() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-extrabold text-xs tracking-wide shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Chansandra Goods Payback
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Month Filter */}
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-300 shadow-xs">
+            <Calendar className="w-4 h-4 text-slate-500" />
+            <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Month:</span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-transparent font-extrabold text-xs text-slate-900 focus:outline-none"
+            >
+              {months.map(m => (
+                <option key={m} value={m} className="text-slate-900 font-bold bg-white">{m === 'All' ? 'All Months' : m}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-extrabold text-xs tracking-wide shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Chansandra Goods Payback
+          </button>
+        </div>
       </div>
 
       {/* Info Notice Banner */}

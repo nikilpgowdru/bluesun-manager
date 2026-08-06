@@ -39,7 +39,7 @@ export const exportCloudBackup = () => api.get('/cloud/export-backup');
 
 export const getPendingBalances = () => api.get('/balances');
 export const settleSaleBalance = (saleId, data) => api.post(`/sales/${saleId}/settle`, data);
-export const getChansandraSummary = () => api.get('/chansandra');
+export const getChansandraSummary = (month) => api.get('/chansandra', { params: { month } });
 export const createChansandraEntry = (data) => api.post('/chansandra', data);
 export const deleteChansandraEntry = (id) => api.delete(`/chansandra/${id}`);
 

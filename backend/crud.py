@@ -942,9 +942,12 @@ def create_chansandra_entry(db: Session, entry_in: schemas.ChansandraEntryCreate
     db.refresh(entry)
     return entry
 
-def get_chansandra_summary(db: Session):
+def get_chansandra_summary(db: Session, month: str = None):
     try:
-        entries = db.query(models.ChansandraEntry).order_by(models.ChansandraEntry.date.desc()).all()
+        query = db.query(models.ChansandraEntry)
+        if month and month != "All":
+            query = query.filter(models.ChansandraEntry.date.startswith(month))
+        entries = query.order_by(models.ChansandraEntry.date.desc()).all()
     except Exception as err:
         db.rollback()
         print("Safely handling chansandra entries query:", err)
