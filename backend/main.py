@@ -13,6 +13,12 @@ from sqlalchemy import text, inspect
 # Auto create database tables on launch
 models.Base.metadata.create_all(bind=database.engine)
 
+app = FastAPI(title="Bluesun Manager API", version="2.0.0-SIMPLIFIED-V3")
+
+@app.get("/api/version")
+def get_app_version():
+    return {"version": "2.0.0-SIMPLIFIED-V3", "build_timestamp": "2026-08-06-23:42"}
+
 # Auto migrate existing tables for new GST and Balance columns
 def run_auto_migrations(engine):
     migrations = [
