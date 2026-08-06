@@ -17,9 +17,9 @@ models.Base.metadata.create_all(bind=database.engine)
 def run_auto_migrations(engine):
     try:
         inspector = inspect(engine)
-        if 'sales' in inspector.get_table_names():
-            columns = [c['name'] for c in inspector.get_columns('sales')]
-            with engine.begin() as conn:
+        with engine.begin() as conn:
+            if inspector.has_table('sales'):
+                columns = [c['name'] for c in inspector.get_columns('sales')]
                 if 'gst_percent' not in columns:
                     try:
                         conn.execute(text("ALTER TABLE sales ADD COLUMN gst_percent FLOAT DEFAULT 0.0"))
