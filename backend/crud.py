@@ -218,8 +218,8 @@ def get_transactions(db: Session, filter_type: str = "Both", month: str = None):
     if month and month != "All":
         query = query.filter(models.Transaction.date.startswith(month))
 
-    # ALWAYS sorted by Date in ascending order per requirements
-    transactions = query.order_by(models.Transaction.date.asc()).all()
+    # ALWAYS sorted by Date in descending order (most recent transactions first)
+    transactions = query.order_by(models.Transaction.date.desc(), models.Transaction.id.desc()).all()
     
     result = []
     for tx in transactions:

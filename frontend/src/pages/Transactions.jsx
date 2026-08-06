@@ -40,7 +40,7 @@ export default function Transactions() {
 
   const columns = [
     {
-      header: 'Date (Ascending)',
+      header: 'Date (Recent First)',
       accessor: 'date',
       sortable: true,
       render: (row) => <span className="font-semibold text-slate-800">{row.date}</span>
@@ -145,7 +145,7 @@ export default function Transactions() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-bold text-slate-800">Transaction History</h3>
-              <p className="text-xs text-slate-500">Chronological transaction record (strictly sorted by Date ascending).</p>
+              <p className="text-xs text-slate-500">Chronological transaction ledger (sorted by Most Recent First).</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 bg-brand-50 text-brand-700 rounded-lg border border-brand-200">
               {transactions.length} Records Found
