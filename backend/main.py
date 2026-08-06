@@ -297,6 +297,7 @@ def reset_database(db: Session = Depends(database.get_db)):
     return crud.reset_database(db)
 
 @app.post("/api/seed-database")
+@app.get("/api/seed-database")
 def seed_database_endpoint(db: Session = Depends(database.get_db)):
     db.query(models.Transaction).delete()
     db.query(models.Sale).delete()
