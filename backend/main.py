@@ -297,6 +297,15 @@ import os
 
 frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 if os.path.exists(frontend_dist):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
 
@@ -304,6 +313,6 @@ if os.path.exists(frontend_dist):
     def catch_all(full_path: str):
         file_path = os.path.join(frontend_dist, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
+            return FileResponse(file_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+        return FileResponse(os.path.join(frontend_dist, "index.html"), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
