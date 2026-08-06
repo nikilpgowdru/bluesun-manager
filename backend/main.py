@@ -310,20 +310,25 @@ async def add_no_cache_headers(request, call_next):
 
 if os.path.exists(frontend_dist):
     assets_dir = os.path.join(frontend_dist, "assets")
-    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/assets/{asset_name}")
+    def get_asset(asset_name: str):
+        target_path = os.path.join(assets_dir, asset_name)
+        if asset_name.endswith(".js"):
+            js_files = [f for f in os.listdir(assets_dir) if f.endswith(".js")] if os.path.exists(assets_dir) else []
+            if js_files:
+                latest_js = os.path.join(assets_dir, js_files[0])
+                return FileResponse(latest_js, media_type="application/javascript", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+        
+        if os.path.exists(target_path) and os.path.isfile(target_path):
+            return FileResponse(target_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+        
+        return FileResponse(os.path.join(frontend_dist, "index.html"), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
     @app.get("/{full_path:path}")
     def catch_all(full_path: str):
         file_path = os.path.join(frontend_dist, full_path)
         if os.path.exists(file_path) and os.path.isfile(file_path):
             return FileResponse(file_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
-        
-        # If an old JS asset file is requested by a cached browser, serve the latest JS bundle!
-        if full_path.startswith("assets/") and full_path.endswith(".js"):
-            js_files = [f for f in os.listdir(assets_dir) if f.endswith(".js")] if os.path.exists(assets_dir) else []
-            if js_files:
-                latest_js = os.path.join(assets_dir, js_files[0])
-                return FileResponse(latest_js, media_type="application/javascript", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
-
         return FileResponse(os.path.join(frontend_dist, "index.html"), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
