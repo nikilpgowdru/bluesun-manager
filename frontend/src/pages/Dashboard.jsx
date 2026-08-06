@@ -4,7 +4,7 @@ import Layout from '../components/Layout';
 import StatCard from '../components/StatCard';
 import Table from '../components/Table';
 import { getDashboardStats } from '../api';
-import { Package, DollarSign, TrendingDown, TrendingUp, Bell, Calendar, Factory } from 'lucide-react';
+import { Package, DollarSign, TrendingDown, TrendingUp, Bell, Calendar, Factory, AlertOctagon } from 'lucide-react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -101,32 +101,37 @@ export default function Dashboard() {
       accessor: 'factory_name',
       render: (row) => getFactoryBadge(row.factory_name)
     },
-    { 
-      header: 'Manufacture Date', 
+    {
+      header: 'Manufacture Date',
       accessor: 'manufacture_date',
-      render: (row) => <span className="font-semibold text-slate-700">{row.manufacture_date}</span>
+      render: (row) => <span className="text-slate-700 font-bold text-xs">{row.manufacture_date}</span>
     },
     {
-      header: 'Available Inventory',
+      header: 'Available',
       accessor: 'available_pcs',
       render: (row) => (
-        <span className="font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">{row.available_pcs} PCS</span>
+        <span className="font-extrabold text-slate-900">
+          {row.available_pcs} <span className="text-xs text-slate-500 font-bold">PCS</span>
+        </span>
       )
-    },
+    }
   ];
 
-  const months = ['All', '2026-08', '2026-07', '2026-06', '2026-05'];
+  const months = ['All', '2026-08', '2026-07', '2026-06', '2026-05', '2026-04'];
 
   return (
-    <Layout pageTitle="Executive Dashboard">
-      {/* Month Selector Bar */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+    <Layout title="Executive Overview">
+      {/* Top Header Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-lg font-extrabold text-slate-900 uppercase tracking-wider font-heading">
-            Executive Summary
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight font-heading uppercase">
+            Performance Summary
           </h2>
-          <p className="text-xs text-slate-600 font-semibold mt-0.5">Real-time apparel inventory & financial performance across Jeans, Shirts, and Formals.</p>
+          <p className="text-xs text-slate-600 font-semibold mt-0.5">
+            Real-time analytics across Jeans, Shirts, Formals, and Chansandra lines.
+          </p>
         </div>
+
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-slate-500" />
           <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Month:</span>
@@ -148,8 +153,8 @@ export default function Dashboard() {
         </div>
       ) : stats ? (
         <div className="space-y-6">
-          {/* Top Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Top Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
               title="Garment Available Stock"
               value={`${stats.overall_available_stock.toLocaleString()} PCS`}
@@ -158,11 +163,18 @@ export default function Dashboard() {
               color="indigo"
             />
             <StatCard
+              title="Total Rejected Pieces"
+              value={`${(stats.overall_rejected_pcs || 0).toLocaleString()} PCS`}
+              icon={AlertOctagon}
+              subtitle="Quality Control Rejects"
+              color="amber"
+            />
+            <StatCard
               title="Total Sales Revenue"
               value={`₹${stats.total_sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
               icon={DollarSign}
               trend="Gross Sales"
-              subtitle="Total Gross Earnings"
+              subtitle={stats.chansandra_total > 0 ? `Includes ₹${stats.chansandra_total.toLocaleString('en-IN')} Chansandra` : "Total Gross Earnings"}
               color="emerald"
             />
             <StatCard

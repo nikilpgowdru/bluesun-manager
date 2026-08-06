@@ -4,13 +4,14 @@ import Layout from '../components/Layout';
 import Table from '../components/Table';
 import SaleModal from '../components/SaleModal';
 import { getGoodsDetail, deleteGoods, deleteSale } from '../api';
-import { ArrowLeft, Plus, Trash2, Factory, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Factory, Calendar, Edit3 } from 'lucide-react';
 
 export default function GoodsDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [goodsData, setGoodsData] = useState(null);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
+  const [selectedSaleToEdit, setSelectedSaleToEdit] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +28,12 @@ export default function GoodsDetails() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditSale = (e, sale) => {
+    e.stopPropagation();
+    setSelectedSaleToEdit(sale);
+    setIsSaleModalOpen(true);
   };
 
   const handleDeleteProduct = async () => {
@@ -89,6 +96,30 @@ export default function GoodsDetails() {
       render: (row) => <span className="font-black text-emerald-700">₹{row.total_amount.toFixed(2)}</span>,
     },
     {
+      header: 'Payment Status',
+      accessor: 'payment_status',
+      render: (row) => {
+        const status = row.payment_status || 'Paid';
+        if (status === 'Paid') {
+          return <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">Full Paid</span>;
+        } else if (status === 'Pending') {
+          return (
+            <div className="flex flex-col">
+              <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-rose-50 text-rose-700 border border-rose-200 w-fit">Pay Later</span>
+              <span className="text-[10px] text-rose-600 font-bold mt-0.5">Due: ₹{row.balance_due?.toFixed(2)}</span>
+            </div>
+          );
+        } else {
+          return (
+            <div className="flex flex-col">
+              <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-amber-50 text-amber-700 border border-amber-200 w-fit">Partial</span>
+              <span className="text-[10px] text-slate-600 font-bold mt-0.5">Paid: ₹{row.paid_amount?.toFixed(2)} | Due: ₹{row.balance_due?.toFixed(2)}</span>
+            </div>
+          );
+        }
+      }
+    },
+    {
       header: 'Receipt',
       accessor: 'receipt',
       render: (row) => <span className="font-mono text-xs text-slate-600 font-bold">{row.receipt}</span>,
@@ -112,17 +143,26 @@ export default function GoodsDetails() {
       ),
     },
     {
-      header: 'Delete',
-      accessor: 'delete_action',
+      header: 'Actions',
+      accessor: 'actions',
       sortable: false,
       render: (row) => (
-        <button
-          onClick={(e) => handleDeleteSale(e, row.id)}
-          className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors"
-          title="Delete Sale Record"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => handleEditSale(e, row)}
+            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Edit Sale Record"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => handleDeleteSale(e, row.id)}
+            className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors"
+            title="Delete Sale Record"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -177,7 +217,10 @@ export default function GoodsDetails() {
           </button>
 
           <button
-            onClick={() => setIsSaleModalOpen(true)}
+            onClick={() => {
+              setSelectedSaleToEdit(null);
+              setIsSaleModalOpen(true);
+            }}
             disabled={goods.available_pcs <= 0}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-extrabold text-xs tracking-wide shadow-md shadow-blue-600/20 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
@@ -266,12 +309,16 @@ export default function GoodsDetails() {
         />
       </div>
 
-      {/* Add Sale Modal */}
+      {/* Add / Edit Sale Modal */}
       <SaleModal
         isOpen={isSaleModalOpen}
-        onClose={() => setIsSaleModalOpen(false)}
+        onClose={() => {
+          setIsSaleModalOpen(false);
+          setSelectedSaleToEdit(null);
+        }}
         goodsId={goods.id}
         availablePcs={goods.available_pcs}
+        initialData={selectedSaleToEdit}
         onSuccess={fetchGoodsDetail}
       />
     </Layout>

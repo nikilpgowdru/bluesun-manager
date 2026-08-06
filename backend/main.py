@@ -13,7 +13,7 @@ from sqlalchemy import text, inspect
 # Auto create database tables on launch
 models.Base.metadata.create_all(bind=database.engine)
 
-# Auto migrate existing tables for new GST columns
+# Auto migrate existing tables for new GST and Balance columns
 def run_auto_migrations(engine):
     try:
         inspector = inspect(engine)
@@ -30,6 +30,21 @@ def run_auto_migrations(engine):
                         conn.execute(text("ALTER TABLE sales ADD COLUMN gst_amount FLOAT DEFAULT 0.0"))
                     except Exception as e:
                         print("Migration gst_amount info:", e)
+                if 'payment_status' not in columns:
+                    try:
+                        conn.execute(text("ALTER TABLE sales ADD COLUMN payment_status VARCHAR DEFAULT 'Paid'"))
+                    except Exception as e:
+                        print("Migration payment_status info:", e)
+                if 'paid_amount' not in columns:
+                    try:
+                        conn.execute(text("ALTER TABLE sales ADD COLUMN paid_amount FLOAT DEFAULT 0.0"))
+                    except Exception as e:
+                        print("Migration paid_amount info:", e)
+                if 'balance_due' not in columns:
+                    try:
+                        conn.execute(text("ALTER TABLE sales ADD COLUMN balance_due FLOAT DEFAULT 0.0"))
+                    except Exception as e:
+                        print("Migration balance_due info:", e)
     except Exception as err:
         print("Auto-migration exception:", err)
 
@@ -164,7 +179,39 @@ def get_reports(
 ):
     return crud.get_report_data(db, month=month, factory=factory)
 
-# 8. Update Endpoints
+# 8. Pending Balances (Pay Later)
+@app.get("/api/balances", response_model=List[schemas.PendingBalanceOut])
+def get_pending_balances(db: Session = Depends(database.get_db)):
+    return crud.get_pending_balances(db)
+
+@app.post("/api/sales/{sale_id}/settle", response_model=schemas.SaleOut)
+def settle_sale_balance(
+    sale_id: int,
+    settle_in: schemas.SettleBalanceIn,
+    db: Session = Depends(database.get_db)
+):
+    return crud.settle_sale_balance(db, sale_id, settle_in)
+
+# 9. Chansandra Section
+@app.get("/api/chansandra", response_model=schemas.ChansandraSummary)
+def get_chansandra_summary(db: Session = Depends(database.get_db)):
+    return crud.get_chansandra_summary(db)
+
+@app.post("/api/chansandra", response_model=schemas.ChansandraEntryOut, status_code=201)
+def create_chansandra_entry(
+    entry_in: schemas.ChansandraEntryCreate,
+    db: Session = Depends(database.get_db)
+):
+    return crud.create_chansandra_entry(db, entry_in)
+
+@app.delete("/api/chansandra/{entry_id}")
+def delete_chansandra_entry(
+    entry_id: int,
+    db: Session = Depends(database.get_db)
+):
+    return crud.delete_chansandra_entry(db, entry_id)
+
+# 10. Update Endpoints
 @app.put("/api/goods/{goods_id}", response_model=schemas.GoodsOut)
 def update_goods(goods_id: int, goods_in: schemas.GoodsUpdate, db: Session = Depends(database.get_db)):
     return crud.update_goods(db, goods_id, goods_in)

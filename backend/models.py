@@ -55,6 +55,9 @@ class Sale(Base):
     total_amount = Column(Float, nullable=False) # (quantity * price) + gst_amount
     gst_percent = Column(Float, nullable=False, default=0.0) # GST % e.g. 0, 5, 12, 18, 28
     gst_amount = Column(Float, nullable=False, default=0.0) # GST Cost ₹
+    payment_status = Column(String, nullable=False, default="Paid") # "Paid", "Pending", "Partial"
+    paid_amount = Column(Float, nullable=False, default=0.0) # Amount paid so far
+    balance_due = Column(Float, nullable=False, default=0.0) # Remaining unpaid balance
     receipt = Column(String, nullable=False)
     receiver = Column(String, nullable=False) # "Expense" or "Saving"
     account_holder_id = Column(Integer, ForeignKey("account_holders.id"), nullable=True)
@@ -91,3 +94,15 @@ class Transaction(Base):
     account_holder_id = Column(Integer, ForeignKey("account_holders.id"), nullable=True)
 
     account_holder = relationship("AccountHolder", back_populates="transactions")
+
+class ChansandraEntry(Base):
+    __tablename__ = "chansandra_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    factory_name = Column(String, nullable=False, index=True) # Jeans, Shirts, Formals
+    brand_name = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    date = Column(String, nullable=False, index=True) # YYYY-MM-DD
+    quantity = Column(Integer, nullable=False, default=0) # PCS
+    amount = Column(Float, nullable=False, default=0.0) # ₹ value of goods provided
+    notes = Column(String, nullable=True)

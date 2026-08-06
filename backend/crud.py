@@ -78,6 +78,9 @@ def get_goods_detail(db: Session, goods_id: int):
             gst_percent=getattr(s, 'gst_percent', 0.0) or 0.0,
             gst_amount=getattr(s, 'gst_amount', 0.0) or 0.0,
             total_amount=s.total_amount,
+            payment_status=getattr(s, 'payment_status', 'Paid') or 'Paid',
+            paid_amount=getattr(s, 'paid_amount', s.total_amount) if getattr(s, 'paid_amount', None) is not None else s.total_amount,
+            balance_due=getattr(s, 'balance_due', 0.0) or 0.0,
             receipt=s.receipt,
             receiver=s.receiver,
             account_holder_id=getattr(s, 'account_holder_id', None),
@@ -108,6 +111,20 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
 
     total_amount = round(subtotal + gst_amt, 2)
     
+    # Calculate Payment Status & Balance
+    p_status = sale_in.payment_status or "Paid"
+    if p_status == "Paid":
+        p_amount = total_amount
+        b_due = 0.0
+    elif p_status == "Pending":
+        p_amount = 0.0
+        b_due = total_amount
+    else: # Partial
+        p_amount = round(sale_in.paid_amount or 0.0, 2)
+        b_due = round(max(0.0, total_amount - p_amount), 2)
+        if b_due == 0.0:
+            p_status = "Paid"
+
     # 1. Update Goods
     goods.sold_pcs += sale_in.quantity
     goods.total_earnings += total_amount
@@ -122,6 +139,9 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
         gst_percent=gst_pct,
         gst_amount=gst_amt,
         total_amount=total_amount,
+        payment_status=p_status,
+        paid_amount=p_amount,
+        balance_due=b_due,
         receipt=sale_in.receipt,
         receiver=sale_in.receiver,
         account_holder_id=sale_in.account_holder_id if sale_in.receiver == "Saving" else None,
@@ -131,7 +151,8 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
     db.flush()
 
     # 3. Create Transaction
-    transaction_desc = f"Sale: {goods.brand_name} ({goods.type}) x {sale_in.quantity} pcs to {sale_in.sold_to}"
+    tx_status_text = f" ({p_status})" if p_status != "Paid" else ""
+    transaction_desc = f"Sale: {goods.brand_name} ({goods.type}) x {sale_in.quantity} pcs to {sale_in.sold_to}{tx_status_text}"
     tx = models.Transaction(
         date=sale_in.date,
         type="Sale",
@@ -144,27 +165,23 @@ def create_sale(db: Session, goods_id: int, sale_in: schemas.SaleCreate):
     )
     db.add(tx)
 
-    # 4. Receiver Logic
-    if sale_in.receiver == "Expense":
-        # Create automatic Expense entry
-        exp_desc = sale_in.expense_description or f"Expense from Sale of {goods.brand_name}"
-        expense = models.Expense(
-            factory_name=goods.factory_name,
-            date=sale_in.date,
-            expense_description=exp_desc,
-            amount=total_amount,
-            account_holder_id=None,
-            is_from_sale=True
-        )
-        db.add(expense)
-    elif sale_in.receiver == "Saving":
-        if not sale_in.account_holder_id:
-            raise HTTPException(status_code=400, detail="Account Holder selection required for Saving receiver")
-        account_holder = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale_in.account_holder_id).first()
-        if not account_holder:
-            raise HTTPException(status_code=404, detail="Selected Account Holder not found")
-        # Increase Account Holder balance
-        account_holder.current_balance += total_amount
+    # 4. Receiver Logic (only apply actual cash received `p_amount` to Account Holder/Expense)
+    if p_amount > 0:
+        if sale_in.receiver == "Expense":
+            exp_desc = sale_in.expense_description or f"Expense from Sale of {goods.brand_name}"
+            expense = models.Expense(
+                factory_name=goods.factory_name,
+                date=sale_in.date,
+                expense_description=exp_desc,
+                amount=p_amount,
+                account_holder_id=None,
+                is_from_sale=True
+            )
+            db.add(expense)
+        elif sale_in.receiver == "Saving" and sale_in.account_holder_id:
+            account_holder = db.query(models.AccountHolder).filter(models.AccountHolder.id == sale_in.account_holder_id).first()
+            if account_holder:
+                account_holder.current_balance += p_amount
 
     db.commit()
     db.refresh(sale)
@@ -362,7 +379,16 @@ def get_dashboard_stats(db: Session, month: str = None):
     all_expenses = expenses_query.all()
 
     overall_available_stock = sum(g.available_pcs for g in all_goods)
-    total_sales = sum(s.total_amount for s in all_sales)
+    overall_rejected_pcs = sum(g.rejected_pcs for g in all_goods)
+
+    try:
+        chansandra_entries = db.query(models.ChansandraEntry).all()
+        chansandra_total = sum(c.amount for c in chansandra_entries)
+    except Exception:
+        chansandra_total = 0.0
+
+    total_sales_goods = sum(s.total_amount for s in all_sales)
+    total_sales = round(total_sales_goods + chansandra_total, 2)
     total_expenses = sum(e.amount for e in all_expenses)
     net_profit = round(total_sales - total_expenses, 2)
 
@@ -374,9 +400,10 @@ def get_dashboard_stats(db: Session, month: str = None):
         f_goods = [g for g in all_goods if g.factory_name == f]
         f_sales = [s for s in all_sales if s.goods and s.goods.factory_name == f]
         f_expenses = [e for e in all_expenses if e.factory_name == f]
+        f_chansandra = [c for c in chansandra_entries if c.factory_name == f] if chansandra_total > 0 else []
 
         f_stock = sum(g.available_pcs for g in f_goods)
-        f_sales_amount = sum(s.total_amount for s in f_sales)
+        f_sales_amount = sum(s.total_amount for s in f_sales) + sum(c.amount for c in f_chansandra)
         f_exp_amount = sum(e.amount for e in f_expenses)
         f_profit = round(f_sales_amount - f_exp_amount, 2)
 
@@ -430,9 +457,11 @@ def get_dashboard_stats(db: Session, month: str = None):
 
     return schemas.DashboardStats(
         overall_available_stock=overall_available_stock,
+        overall_rejected_pcs=overall_rejected_pcs,
         total_sales=total_sales,
         total_expenses=total_expenses,
         net_profit=net_profit,
+        chansandra_total=chansandra_total,
         factory_summaries=factory_summaries,
         recent_goods=recent_goods_out,
         notifications=notifications
@@ -821,6 +850,141 @@ def reset_database(db: Session):
     ])
     db.commit()
     return {"message": "Database successfully reset to fresh setup!"}
+
+# Pending Balances (Pay Later)
+def get_pending_balances(db: Session):
+    try:
+        sales = db.query(models.Sale).filter(
+            (models.Sale.balance_due > 0) | (models.Sale.payment_status != "Paid")
+        ).order_by(models.Sale.date.desc()).all()
+    except Exception as err:
+        db.rollback()
+        print("Safely handling pending balances query:", err)
+        sales = []
+    
+    result = []
+    for s in sales:
+        g = db.query(models.Goods).filter(models.Goods.id == s.goods_id).first()
+        result.append(schemas.PendingBalanceOut(
+            sale_id=s.id,
+            goods_id=s.goods_id,
+            factory_name=g.factory_name if g else "Jeans",
+            type=g.type if g else "",
+            brand_name=g.brand_name if g else "",
+            sold_to=s.sold_to,
+            date=s.date,
+            quantity=s.quantity,
+            price=s.price,
+            total_amount=s.total_amount,
+            paid_amount=getattr(s, 'paid_amount', s.total_amount) if getattr(s, 'paid_amount', None) is not None else s.total_amount,
+            balance_due=getattr(s, 'balance_due', 0.0) or 0.0,
+            payment_status=getattr(s, 'payment_status', 'Pending') or 'Pending',
+            receipt=s.receipt
+        ))
+    return result
+
+def settle_sale_balance(db: Session, sale_id: int, settle_in: schemas.SettleBalanceIn):
+    sale = db.query(models.Sale).filter(models.Sale.id == sale_id).first()
+    if not sale:
+        raise HTTPException(status_code=404, detail="Sale record not found")
+    
+    pay_amt = round(settle_in.amount_paid, 2)
+    if pay_amt <= 0:
+        raise HTTPException(status_code=400, detail="Amount paid must be greater than 0")
+    
+    current_due = getattr(sale, 'balance_due', 0.0) or 0.0
+    if pay_amt > current_due:
+        pay_amt = current_due
+        
+    sale.paid_amount = (getattr(sale, 'paid_amount', 0.0) or 0.0) + pay_amt
+    sale.balance_due = max(0.0, current_due - pay_amt)
+    
+    if sale.balance_due == 0:
+        sale.payment_status = "Paid"
+    else:
+        sale.payment_status = "Partial"
+        
+    if settle_in.account_holder_id:
+        ah = db.query(models.AccountHolder).filter(models.AccountHolder.id == settle_in.account_holder_id).first()
+        if ah:
+            ah.current_balance += pay_amt
+            g = db.query(models.Goods).filter(models.Goods.id == sale.goods_id).first()
+            brand = g.brand_name if g else "Goods"
+            tx = models.Transaction(
+                date=sale.date,
+                type="Sale",
+                description=f"Balance Payment Collected from {sale.sold_to} for {brand} (+₹{pay_amt})",
+                amount=pay_amt,
+                factory_name=g.factory_name if g else "Jeans",
+                goods_id=sale.goods_id,
+                sales_id=sale.id,
+                account_holder_id=ah.id
+            )
+            db.add(tx)
+
+    db.commit()
+    db.refresh(sale)
+    return sale
+
+# Chansandra Loan Payback Section
+def create_chansandra_entry(db: Session, entry_in: schemas.ChansandraEntryCreate):
+    entry = models.ChansandraEntry(
+        factory_name=entry_in.factory_name,
+        brand_name=entry_in.brand_name,
+        type=entry_in.type,
+        date=entry_in.date,
+        quantity=entry_in.quantity,
+        amount=entry_in.amount,
+        notes=entry_in.notes
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+def get_chansandra_summary(db: Session):
+    try:
+        entries = db.query(models.ChansandraEntry).order_by(models.ChansandraEntry.date.desc()).all()
+    except Exception as err:
+        db.rollback()
+        print("Safely handling chansandra entries query:", err)
+        entries = []
+    
+    shirts = [e for e in entries if e.factory_name == "Shirts"]
+    formals = [e for e in entries if e.factory_name == "Formals"]
+    jeans = [e for e in entries if e.factory_name == "Jeans"]
+    
+    shirts_pcs = sum(e.quantity for e in shirts)
+    shirts_amt = sum(e.amount for e in shirts)
+    formals_pcs = sum(e.quantity for e in formals)
+    formals_amt = sum(e.amount for e in formals)
+    jeans_pcs = sum(e.quantity for e in jeans)
+    jeans_amt = sum(e.amount for e in jeans)
+    
+    total_amount = sum(e.amount for e in entries)
+    total_pcs = sum(e.quantity for e in entries)
+    
+    entries_out = [schemas.ChansandraEntryOut.model_validate(e) for e in entries]
+    
+    return schemas.ChansandraSummary(
+        total_amount=total_amount,
+        total_pcs=total_pcs,
+        shirts_pcs=shirts_pcs,
+        shirts_amount=shirts_amt,
+        formals_pcs=formals_pcs,
+        formals_amount=formals_amt,
+        jeans_pcs=jeans_pcs,
+        jeans_amount=jeans_amt,
+        entries=entries_out
+    )
+
+def delete_chansandra_entry(db: Session, entry_id: int):
+    entry = db.query(models.ChansandraEntry).filter(models.ChansandraEntry.id == entry_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Chansandra entry not found")
+    db.delete(entry)
+    db.commit()
+    return {"message": "Chansandra entry deleted successfully"}
 
 
 

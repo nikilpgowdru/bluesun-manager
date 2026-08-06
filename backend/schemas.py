@@ -51,6 +51,9 @@ class SaleCreate(BaseModel):
     price: float = Field(..., gt=0) # Unit price
     gst_percent: Optional[float] = 0.0
     gst_amount: Optional[float] = 0.0
+    payment_status: Optional[str] = "Paid" # "Paid", "Pending", "Partial"
+    paid_amount: Optional[float] = 0.0
+    balance_due: Optional[float] = 0.0
     receipt: str
     receiver: str # "Expense" or "Saving"
     account_holder_id: Optional[int] = None
@@ -72,6 +75,9 @@ class SaleOut(BaseModel):
     gst_percent: float = 0.0
     gst_amount: float = 0.0
     total_amount: float
+    payment_status: str = "Paid"
+    paid_amount: float = 0.0
+    balance_due: float = 0.0
     receipt: str
     receiver: str
     account_holder_id: Optional[int] = None
@@ -80,6 +86,29 @@ class SaleOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PendingBalanceOut(BaseModel):
+    sale_id: int
+    goods_id: int
+    factory_name: str
+    type: str
+    brand_name: str
+    sold_to: str
+    date: str
+    quantity: int
+    price: float
+    total_amount: float
+    paid_amount: float
+    balance_due: float
+    payment_status: str
+    receipt: str
+
+    class Config:
+        from_attributes = True
+
+class SettleBalanceIn(BaseModel):
+    amount_paid: float = Field(..., gt=0)
+    account_holder_id: Optional[int] = None
 
 class AccountHolderCreate(BaseModel):
     name: str
@@ -162,12 +191,53 @@ class Notification(BaseModel):
 
 class DashboardStats(BaseModel):
     overall_available_stock: int
+    overall_rejected_pcs: int = 0
     total_sales: float
     total_expenses: float
     net_profit: float
+    chansandra_total: float = 0.0
     factory_summaries: List[FactorySummary]
     recent_goods: List[GoodsOut]
     notifications: List[Notification]
+
+class ChansandraEntryCreate(BaseModel):
+    factory_name: str # Jeans, Shirts, Formals
+    brand_name: str
+    type: str
+    date: str # YYYY-MM-DD
+    quantity: int = Field(..., ge=1)
+    amount: float = Field(..., gt=0)
+    notes: Optional[str] = None
+
+    @field_validator('factory_name')
+    def validate_factory(cls, v):
+        if v not in ['Jeans', 'Shirts', 'Formals']:
+            raise ValueError('Factory name must be Jeans, Shirts, or Formals')
+        return v
+
+class ChansandraEntryOut(BaseModel):
+    id: int
+    factory_name: str
+    brand_name: str
+    type: str
+    date: str
+    quantity: int
+    amount: float
+    notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class ChansandraSummary(BaseModel):
+    total_amount: float
+    total_pcs: int
+    shirts_pcs: int
+    shirts_amount: float
+    formals_pcs: int
+    formals_amount: float
+    jeans_pcs: int
+    jeans_amount: float
+    entries: List[ChansandraEntryOut]
 
 class GoodsDetailOut(BaseModel):
     goods: GoodsOut
@@ -203,6 +273,9 @@ class SaleUpdate(BaseModel):
     price: Optional[float] = Field(None, gt=0)
     gst_percent: Optional[float] = None
     gst_amount: Optional[float] = None
+    payment_status: Optional[str] = None
+    paid_amount: Optional[float] = None
+    balance_due: Optional[float] = None
     receipt: Optional[str] = None
     receiver: Optional[str] = None
     account_holder_id: Optional[int] = None

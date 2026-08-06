@@ -136,35 +136,62 @@ export default function Goods() {
     <Layout pageTitle="Goods Production History">
       {/* Control Bar */}
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-        {/* Filters */}
+        {/* Quick Select Filter Buttons */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Factory Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Factory:</span>
-            <select
-              value={factory}
-              onChange={(e) => setFactory(e.target.value)}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            <button
+              onClick={() => setFactory('All')}
+              className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs transition-all ${
+                factory === 'All'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
             >
-              <option value="All">All Factories</option>
-              <option value="Jeans">Jeans</option>
-              <option value="Shirts">Shirts</option>
-              <option value="Formals">Formals</option>
-            </select>
+              All Factories
+            </button>
+            <button
+              onClick={() => setFactory('Jeans')}
+              className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 transition-all ${
+                factory === 'Jeans'
+                  ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400/30'
+                  : 'text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/60'
+              }`}
+            >
+              👖 Jeans
+            </button>
+            <button
+              onClick={() => setFactory('Shirts')}
+              className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 transition-all ${
+                factory === 'Shirts'
+                  ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-400/30'
+                  : 'text-teal-700 bg-teal-50/80 hover:bg-teal-100 border border-teal-200/60'
+              }`}
+            >
+              👔 Shirts
+            </button>
+            <button
+              onClick={() => setFactory('Formals')}
+              className={`px-3.5 py-1.5 rounded-xl font-extrabold text-xs flex items-center gap-1 transition-all ${
+                factory === 'Formals'
+                  ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-400/30'
+                  : 'text-purple-700 bg-purple-50/80 hover:bg-purple-100 border border-purple-200/60'
+              }`}
+            >
+              🧥 Formals
+            </button>
           </div>
 
           {/* Month Filter */}
           <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
             <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Month:</span>
+            <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Month:</span>
             <select
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3.5 py-1.5 rounded-xl border border-slate-300 bg-white font-extrabold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
             >
               {months.map(m => (
-                <option key={m} value={m}>{m === 'All' ? 'All Months' : m}</option>
+                <option key={m} value={m} className="text-slate-900 font-bold bg-white">{m === 'All' ? 'All Months' : m}</option>
               ))}
             </select>
           </div>

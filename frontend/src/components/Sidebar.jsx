@@ -1,12 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Package, ArrowLeftRight, Users, CreditCard, FileText, Shirt, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Package, ArrowLeftRight, Users, CreditCard, FileText, Shirt, Sparkles, Scale, Landmark } from 'lucide-react';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Garment Inventory', path: '/goods', icon: Package },
     { label: 'Transactions', path: '/transactions', icon: ArrowLeftRight },
+    { label: 'Pending Balances', path: '/balances', icon: Scale },
+    { label: 'Chansandra', path: '/chansandra', icon: Landmark },
     { label: 'Account Holders', path: '/account-holders', icon: Users },
     { label: 'Expenses', path: '/expenses', icon: CreditCard },
     { label: 'Reports', path: '/reports', icon: FileText },

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Table from '../components/Table';
 import { getTransactions } from '../api';
 import { ArrowUpDown, Calendar, ArrowUpRight, ArrowDownLeft, Factory } from 'lucide-react';
 
 export default function Transactions() {
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [filterType, setFilterType] = useState('Both'); // "Sales", "Expenses", "Both"
   const [selectedMonth, setSelectedMonth] = useState('All');
@@ -23,6 +25,16 @@ export default function Transactions() {
       console.error('Error fetching transactions:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRowClick = (row) => {
+    if (row.goods_id) {
+      navigate(`/goods/${row.goods_id}`);
+    } else if (row.account_holder_id) {
+      navigate('/account-holders');
+    } else {
+      navigate('/expenses');
     }
   };
 
@@ -143,6 +155,7 @@ export default function Transactions() {
           <Table
             columns={columns}
             data={transactions}
+            onRowClick={handleRowClick}
             emptyMessage="No transactions found for selected filters."
           />
         </div>
