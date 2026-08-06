@@ -45,15 +45,17 @@ export default function Balances() {
     }
   };
 
-  // Group pending balances by Customer Name
+  // Group pending balances by Customer Name (with typo normalization for legend fashon/fashion)
   const getCustomerGroups = () => {
     const groups = {};
     balances.forEach(b => {
-      const name = b.sold_to.trim();
-      const key = name.toLowerCase();
+      const rawName = b.sold_to.trim();
+      // Normalize typos like 'fashon' -> 'fashion', remove double spaces
+      const key = rawName.toLowerCase().replace(/fashon/g, 'fashion').replace(/\s+/g, ' ');
+      
       if (!groups[key]) {
         groups[key] = {
-          customer_name: name,
+          customer_name: rawName,
           total_due: 0,
           total_paid: 0,
           orders_count: 0,
