@@ -323,7 +323,8 @@ if os.path.exists(frontend_dist):
         if asset_name.endswith(".js"):
             js_files = [f for f in os.listdir(assets_dir) if f.endswith(".js")] if os.path.exists(assets_dir) else []
             if js_files:
-                latest_js = os.path.join(assets_dir, js_files[0])
+                latest_filename = max(js_files, key=lambda f: os.path.getmtime(os.path.join(assets_dir, f)))
+                latest_js = os.path.join(assets_dir, latest_filename)
                 return FileResponse(latest_js, media_type="application/javascript", headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
         
         if os.path.exists(target_path) and os.path.isfile(target_path):
