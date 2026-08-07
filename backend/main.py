@@ -314,6 +314,8 @@ async def add_no_cache_headers(request, call_next):
         response.headers["Expires"] = "0"
     return response
 
+from fastapi.responses import HTMLResponse
+
 if os.path.exists(frontend_dist):
     assets_dir = os.path.join(frontend_dist, "assets")
 
@@ -335,7 +337,17 @@ if os.path.exists(frontend_dist):
     @app.get("/{full_path:path}")
     def catch_all(full_path: str):
         file_path = os.path.join(frontend_dist, full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
+        if os.path.exists(file_path) and os.path.isfile(file_path) and not full_path.endswith(".html"):
             return FileResponse(file_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
-        return FileResponse(os.path.join(frontend_dist, "index.html"), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+        
+        index_path = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+            import re
+            html_content = re.sub(r'/assets/[a-zA-Z0-9_-]+\.js', '/assets/app-bundle.js?v=20260807', html_content)
+            html_content = re.sub(r'/assets/[a-zA-Z0-9_-]+\.css', '/assets/app-style.css?v=20260807', html_content)
+            return HTMLResponse(content=html_content, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+        
+        return HTMLResponse(content="<h1>Bluesun Apparel Server Running</h1>", status_code=200)
 
