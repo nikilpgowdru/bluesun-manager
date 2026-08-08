@@ -340,3 +340,7 @@ class ExpenseUpdate(BaseModel):
     amount: Optional[float] = Field(None, gt=0)
     account_holder_id: Optional[int] = None
 
+class SettleCustomerBalanceIn(BaseModel):
+    customer_name: str
+    amount_paid: float = Field(..., gt=0)
+
